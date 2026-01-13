@@ -3902,6 +3902,8 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 		pet_delautobonus(*sd, sd->pd->autobonus3, true);
 	}
 
+	custom_buff(sd);
+
 	// Parse equipment
 	for (i = 0; i < EQI_MAX; i++) {
 		current_equip_item_index = index = sd->equip_index[i]; // We pass INDEX to current_equip_item_index - for EQUIP_SCRIPT (new cards solution) [Lupus]
@@ -13354,6 +13356,12 @@ static bool status_change_start_post_delay(block_list* src, block_list* bl, sc_t
 	if( opt_flag[SCF_ONTOUCH] && sd && !sd->npc_ontouch_.empty() )
 		npc_touchnext_areanpc(sd,false); // Run OnTouch_ on next char in range
 
+	// custom buff
+	std::shared_ptr<s_custom_buff> cb = custom_buff_db.find(type);
+	
+	if(cb && sd)
+		status_calc_pc(sd,SCO_FORCE);
+
 	return true;
 }
 
@@ -13520,6 +13528,9 @@ int32 status_change_end( block_list* bl, enum sc_type type, int32 tid ){
 	view_data* vd = status_get_viewdata( bl );
 	std::bitset<SCB_MAX> calc_flag = scdb->calc_flag;
 	status_data* status = status_get_status_data(*bl);
+
+	// custom buff
+	std::shared_ptr<s_custom_buff> cb = custom_buff_db.find(type);
 
 	switch(type) {
 		case SC_KEEPING:
@@ -14120,6 +14131,9 @@ int32 status_change_end( block_list* bl, enum sc_type type, int32 tid ){
 	// Needed to be here to make sure OPT1_STONEWAIT has been cleared from the target (only on natural expiration of the stone wait timer)
 	if (type == SC_STONEWAIT && tid != INVALID_TIMER)
 		status_change_start(bl, bl, SC_STONE, 100, val1, val2, 0, 0, val3, SCSTART_NOAVOID);
+
+	if(cb && sd)
+		status_calc_pc(sd,SCO_FORCE);	
 
 	return 1;
 }
@@ -16440,6 +16454,113 @@ void StatusDatabase::loadingFinished(){
 
 StatusDatabase status_db;
 
+const std::string CustomBuffDatabase::getDefaultLocation() {
+	return std::string(db_path) + "/custom/custom_buff.yml";
+}
+
+/**
+ * Reads and parses an entry from the woe_buff.
+ * @param node: YAML node containing the entry.
+ * @return count of successfully parsed rows
+ */
+uint64 CustomBuffDatabase::parseBodyNode(const ryml::NodeRef &node){
+
+	if (!this->nodesExist(node, {"Status"}))
+		return 0;
+
+	std::string status_name;
+	int64 constant;
+
+	if (!this->asString(node, "Status", status_name))
+		return 0;
+
+	if (!script_get_constant(status_name.c_str(), &constant)) {
+		this->invalidWarning(node["Status"], "Invalid Status %s.\n", status_name.c_str());
+		return 0;
+	}
+
+	if (!status_db.validateStatus(static_cast<sc_type>(constant))) {
+		this->invalidWarning(node["Status"], "Status %s is out of bounds.\n", status_name.c_str());
+		return 0;
+	}
+
+	int status_id = static_cast<int32>(constant);
+	std::shared_ptr<s_custom_buff> CustomBuff = this->find(status_id);
+	bool exists = CustomBuff != nullptr;
+
+	if (!exists) {
+		if (!this->nodesExist(node, {"Status"}))
+			return 0;
+
+		CustomBuff = std::make_shared<s_custom_buff>();
+		CustomBuff->sc_id = status_id;
+	}
+
+	if (this->nodeExists(node, "Icon")) {
+		std::string icon_name;
+
+		if (!this->asString(node, "Icon", icon_name))
+			return 0;
+
+		int64 constant;
+
+		if (!script_get_constant(icon_name.c_str(), &constant)) {
+			this->invalidWarning(node["Icon"], "Icon %s is invalid, defaulting to EFST_BLANK.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		if (constant < EFST_BLANK || constant >= EFST_MAX) {
+			this->invalidWarning(node["Icon"], "Icon %s is out of bounds, defaulting to EFST_BLANK.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		CustomBuff->icon = static_cast<efst_type>(constant);
+	} else {
+		if (!exists)
+			CustomBuff->icon = EFST_BLANK;
+	}
+
+	if (this->nodeExists(node, "Script")) {
+		std::string script;
+
+		if (!this->asString(node, "Script", script))
+			return 0;
+
+		if (CustomBuff->script) {
+			script_free_code(CustomBuff->script);
+			CustomBuff->script = nullptr;
+		}
+
+		CustomBuff->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+	} else {
+		if (!exists)
+			CustomBuff->script = nullptr;
+	}
+
+	if (!exists){
+		this->put(CustomBuff->sc_id, CustomBuff);
+	}
+
+	return 1;
+}
+
+CustomBuffDatabase custom_buff_db;
+
+void custom_buff(map_session_data *sd){
+	nullpo_retv(sd);
+
+	for(const auto& entry : custom_buff_db){
+
+		if(!sd->sc.getSCE(entry.second->sc_id))
+			continue;
+
+		if(entry.second->script){
+			run_script(entry.second->script, 0, sd->id, 0);
+		}
+	}
+}
+
+
 /**
  */
 //static bool status_readdb_mob_no_card(char* fields[], int columns, int current)
@@ -16465,7 +16586,6 @@ static bool status_readdb_mob_no_card(char* fields[], size_t columns, size_t cur
 	mobs_no_card.push_back(mobid);
 	return true;
 }
-
 
 /**
  * Sets defaults in tables and starts read db functions
@@ -16507,10 +16627,7 @@ void status_readdb( bool reload ){
 		}
 
 		sv_readdb(dbsubpath1, "status_disabled.txt", ',', 2, 2, -1, &status_readdb_status_disabled, i > 0);
-		//sv_readdb(dbsubpath1, "custom/mobs_no_card.txt", ',', 1, 1, -1, &status_readdb_mob_no_card, i > 0);
 		sv_readdb(dbsubpath1, "custom/mobs_no_card.txt", ',', 1, 1, (size_t)-1, status_readdb_mob_no_card, i > 0);
-
-
 
 		aFree(dbsubpath1);
 		aFree(dbsubpath2);
@@ -16521,11 +16638,13 @@ void status_readdb( bool reload ){
 		refine_db.reload();
 		status_db.reload();
 		enchantgrade_db.reload();
+		custom_buff_db.reload();
 	}else{
 		size_fix_db.load();
 		refine_db.load();
 		status_db.load();
 		enchantgrade_db.load();
+		custom_buff_db.load();
 	}
 	elemental_attribute_db.load();
 }

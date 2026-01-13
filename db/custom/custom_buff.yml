@@ -1,0 +1,198 @@
+###########################################################################
+# Whispering Rain
+###########################################################################
+#
+###########################################################################
+
+Header:
+  Type: CUSTOM_BUFF_DB
+  Version: 1
+
+Body:
+  # เพิ่มได้ตาม status.hpp
+  - Status: SC_CUSTOM_BUFF_1
+    Script: |
+      bonus bRefineSuccessAddRate,5;
+
+  - Status: SC_CUSTOM_BUFF_2
+    Script: |
+      bonus bSPrecovRate,15;
+
+  - Status: SC_CUSTOM_BUFF_3
+    Script: |
+      bonus bRefineSuccessAddRate,8;
+
+  - Status: SC_CUSTOM_BUFF_4
+    Script: |
+      bonus bAddMaxWeight,3000;
+      bonus bSPrecovRate,15;
+
+  - Status: SC_CUSTOM_BUFF_5
+    Script: |
+      bonus bAspd,1;
+
+#aura 125
+#  - Status: SC_CUSTOM_BUFF_6
+#    Script: |
+#      specialeffect2 680;
+#      specialeffect2 679;
+#      specialeffect2 678;
+#      specialeffect2 418;
+#      specialeffect2 362;
+#
+#  - Status: SC_CUSTOM_BUFF_7
+#    Script: |
+#      specialeffect2 678;
+#      specialeffect2 362;
+#      specialeffect2 418;
+
+#Buf GVG
+  - Status: SC_CUSTOM_BUFF_8
+    Script: |
+      if (agitcheck() || agitcheck2() || agitcheck3()) {
+      bonus bAddMaxWeight,5000;
+      }
+
+## weekly vip buff
+#  - Status: SC_CUSTOM_BUFF_10
+#    Script: |
+#      bonus2 bExpAddRace,RC_All,10;
+#      bonus bSPrecovRate,5;
+
+## custom buff
+  - Status: SC_CUSTOM_BUFF_11
+    Script: |
+        bonus2 bExpAddClass,Class_All,5;
+        bonus2 bDropAddRace,RC_All,2;
+        bonus bAspdRate,1;
+        bonus bCastrate,-1;
+        bonus bSPrecovRate,5;
+  - Status: SC_CUSTOM_BUFF_12
+    Script: |
+        bonus2 bExpAddClass,Class_All,10;
+        bonus2 bDropAddRace,RC_All,5;
+        bonus bAspdRate,2;
+        bonus bCastrate,-2;
+        bonus bSPrecovRate,10;
+  - Status: SC_CUSTOM_BUFF_13
+    Script: |
+        bonus2 bExpAddClass,Class_All,15;
+        bonus2 bDropAddRace,RC_All,8;
+        bonus bAspdRate,3;
+        bonus bCastrate,-3;
+        bonus bSPrecovRate,20;
+        bonus2 bAddClass,CLASS_ALL,1;
+        bonus bMatkRate,1;
+  - Status: SC_CUSTOM_BUFF_14
+    Script: |
+        bonus2 bExpAddClass,Class_All,20;
+        bonus2 bDropAddRace,RC_All,10;
+        bonus bAspdRate,4;
+        bonus bCastrate,-4;
+        bonus bSPrecovRate,25;
+        bonus2 bAddClass,CLASS_ALL,3;
+        bonus bMatkRate,3;
+  - Status: SC_CUSTOM_BUFF_15
+    Script: |
+        bonus2 bExpAddClass,Class_All,20;
+        bonus2 bDropAddRace,RC_All,15;
+        bonus bAspdRate,5;
+        bonus bCastrate,-5;
+        bonus bSPrecovRate,30;
+        bonus2 bAddClass,CLASS_ALL,5;
+        bonus bMatkRate,5;
+### Buff Cash
+  - Status: SC_CUSTOM_BUFF_16
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )){
+        bonus2 bDropAddRace,RC_All,10;
+        bonus bAspdRate,5;
+        bonus bLuk,10;
+       }
+  - Status: SC_CUSTOM_BUFF_17
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )){
+        bonus2 bDropAddRace,RC_All,10;
+        bonus bMatkRate,8;
+        bonus bCastrate,-10;
+       }
+  - Status: SC_CUSTOM_BUFF_18
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )){
+        bonus2 bDropAddRace,RC_All,10;
+        bonus bAspdRate,5;
+        bonus2 bAddClass,CLASS_ALL,5;
+       }
+  - Status: SC_CUSTOM_BUFF_19
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )){
+        bonus2 bDropAddRace,RC_All,10;
+        bonus bCritical,10;
+        bonus bCritAtkRate,8;
+       }
+  - Status: SC_CUSTOM_BUFF_20
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )){
+        bonus2 bDropAddRace,RC_All,10;
+        bonus bSPrecovRate,30;
+        bonus bMaxSP,100;
+       }
+###########################################
+## buff drop item
+###########################################
+
+  - Status: SC_CUSTOM_BUFF_24
+    Script: |
+        bonus2 bAddMonsterDropItem,984,66;
+        bonus2 bAddMonsterDropItem,985,66;
+  - Status: SC_CUSTOM_BUFF_25
+    Script: |
+        bonus2 bAddMonsterDropItem,603,33;
+  - Status: SC_CUSTOM_BUFF_26
+    Script: |
+        bonus2 bAddMonsterDropItem,644,33;
+  - Status: SC_CUSTOM_BUFF_27
+    Script: |
+        bonus2 bAddMonsterDropItem,617,33;
+###########################################
+## Dungeon Event
+###########################################
+  - Status: SC_CUSTOM_BUFF_28
+    Script: |
+      bonus2 bExpAddRace,RC_All,10;
+      bonus2 bDropAddRace,RC_All,10;
+      bonus2 bHPDrainRate,30,6;
+      bonus bAspdRate,5;
+      bonus2 bDropCardAddRace,RC_All,10;
+  - Status: SC_CUSTOM_BUFF_29
+    Script: |
+      bonus2 bExpAddRace,RC_All,10;
+      bonus2 bDropAddRace,RC_All,10;
+      bonus2 bMagicHPDrainRate,30,6;
+      bonus bCastrate,-10;
+      bonus2 bDropCardAddRace,RC_All,10;
+###########################################
+## buff guild
+###########################################
+  - Status: SC_GUILD_BUFF_1_1
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )) {
+        bonus2 bExpAddClass,Class_All,getskilllv("GD_CHARGESHOUT_FLAG")*1;
+        bonus2 bDropAddRace,RC_All,getskilllv("GD_CHARGESHOUT_FLAG")*1;
+        bonus bSPrecovRate,getskilllv("GD_CHARGESHOUT_FLAG")*1;
+      }
+############
+  - Status: SC_GUILD_BUFF_2_1
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )) {
+        bonus2 bAddRace,RC_All,(getskilllv("GD_CHARGESHOUT_BEATING")+1)/2;
+        bonus bMatkRate,(getskilllv("GD_CHARGESHOUT_BEATING")+1)/2;
+      }
+############
+  - Status: SC_GUILD_BUFF_3_1
+    Script: |
+      if(!getmapflag( strcharinfo(3),mf_gvg )) {
+        bonus bHitRate,(getskilllv("GD_EMERGENCY_MOVE")+1)/2;
+        bonus bFleeRate,(getskilllv("GD_EMERGENCY_MOVE")+1)/2;
+        bonus bAspdRate,(getskilllv("GD_EMERGENCY_MOVE")+1)/2;
+      }
