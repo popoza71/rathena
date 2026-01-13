@@ -148,7 +148,7 @@ bool YamlDatabase::load(const std::string& path) {
 void YamlDatabase::loadingFinished(){
 	// Does nothing by default, just for hooking
 }
-
+/*
 void YamlDatabase::parse( const ryml::Tree& tree ){
 	uint64 count = 0;
 
@@ -170,6 +170,20 @@ void YamlDatabase::parse( const ryml::Tree& tree ){
 		}
 
 		ShowStatus( "Done reading '" CL_WHITE "%" PRIu64 CL_RESET "' entries in '" CL_WHITE "%s" CL_RESET "'" CL_CLL "\n", count, fileName );
+	}
+}
+*/
+void YamlDatabase::parse(const ryml::Tree& tree) {
+	uint64 count = 0;
+
+	if (this->nodeExists(tree.rootref(), "Body")) {
+		const ryml::NodeRef& bodyNode = tree["Body"];
+		const char* fileName = this->currentFile.c_str();
+
+		for (const ryml::NodeRef& node : bodyNode)
+			count += this->parseBodyNode(node);
+
+		ShowStatus("Done reading '" CL_WHITE "%" PRIu64 CL_RESET "' entries in '" CL_WHITE "%s" CL_RESET "'" CL_CLL "\n", count, fileName);
 	}
 }
 

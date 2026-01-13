@@ -198,6 +198,9 @@ struct CharServ_Config {
 	int32 start_zeny;
 	int32 guild_exp_rate;
 
+	int32 guild_extension;
+	int32 guild_member;
+
 	int32 clan_remove_inactive_days;
 	int32 mail_return_days;
 	int32 mail_delete_days;

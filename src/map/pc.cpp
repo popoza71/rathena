@@ -8457,6 +8457,9 @@ void pc_gainexp(map_session_data *sd, block_list *src, t_exp base_exp, t_exp job
 	if(sd->prev == nullptr || pc_isdead(sd))
 		return;
 
+	if (sd->sc.getSCE(SC_TRICKDEAD) && battle_config.trickdead_noexp)
+		return;
+
 	if (!(exp_flag&2)) {
 
 		if (!battle_config.pvp_exp && map_getmapflag(sd->m, MF_PVP))  // [MouseJstr]

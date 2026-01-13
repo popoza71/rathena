@@ -9,3 +9,7 @@
  **/
 
 //ACMD_DEF(newcommand),
+
+ACMD_DEF(mapmob), //puppy mapmob
+ACMD_DEF(itemmap),
+ACMD_DEF2("itemmapbound",itemmap),

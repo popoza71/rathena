@@ -2809,6 +2809,9 @@ void char_set_defaults(){
 	charserv_config.start_zeny = 0;
 	charserv_config.guild_exp_rate = 100;
 
+	charserv_config.guild_extension = 6;
+	charserv_config.guild_member = 16;
+
 	charserv_config.clan_remove_inactive_days = 14;
 	charserv_config.mail_return_days = 14;
 	charserv_config.mail_delete_days = 14;
@@ -3067,6 +3070,12 @@ bool char_config_read(const char* cfgName, bool normal){
 			}
 		} else if (strcmpi(w1, "guild_exp_rate") == 0) {
 			charserv_config.guild_exp_rate = atoi(w2);
+
+		} else if (strcmpi(w1, "guild_extension") == 0) {
+			charserv_config.guild_extension = atoi(w2);
+		} else if (strcmpi(w1, "guild_member") == 0) {
+			charserv_config.guild_member = atoi(w2);
+
 		} else if (strcmpi(w1, "pincode_enabled") == 0) {
 #if PACKETVER_SUPPORTS_PINCODE
 			charserv_config.pincode_config.pincode_enabled = config_switch(w2);
