@@ -27,6 +27,8 @@ struct s_elemental_data;
 struct npc_data;
 class status_change;
 
+extern std::vector<int> mobs_no_card;
+
 /**
  * Max Refine available to your server
  **/

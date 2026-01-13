@@ -3340,6 +3340,9 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 				continue;
 			}
 
+			if(it->type == IT_CARD && util::vector_exists(mobs_no_card, md->mob_id))
+				continue;
+
 			std::shared_ptr<s_item_drop> ditem = mob_setdropitem(entry, 1, md->mob_id);
 
 			//A Rare Drop Global Announce by Lupus

@@ -1,0 +1,64 @@
+//===== Mobs No Card List Configulation Files =======================================
+//  Whispering Rain
+//= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// Structure of Database:
+// mobid
+//= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+//1004 //hornet
+
+//1038 //Osiris
+//1039 //Baphomet
+//1046 //Doppelganger
+//1059 //Mistress
+//1086 //Golden_Bug
+//1087 //Orc_Hero
+//1112 //Drake
+//1115 //Eddga
+//1147 //Maya
+//1150 //Moonlight_Flower
+//1157 //Pharaoh
+//1159 //Phreeoni
+//1190 //Orc Lord
+//1251 //Stormy Knight
+//1252 //Garm
+//1272 //Dark_Lord
+//1312 //Turtle_General
+//1373 //Lord_Of_Death
+//1389 //Dracula_Card
+//1418 //Dark_Snake_Lord
+//1492 //Incant_Samurai
+//1511 //Amon_Ra
+//1583 //Tao_Gunka
+//1623 //Rsx_0806
+//1630 //Bacsojin
+//1646 //Lord Knight
+//1647 //Assassin Cross
+//1648 //MasterSmith
+//1649 //High Priest
+//1650 //Sniper Card
+//1651 //High Wizard
+//1658 //B_Ygnizem
+//1685 //Vesper
+//1688 //Lady_Tanee
+//1719 //Detardeurus
+//1734 //Kiel D-01
+//1751 //Valkyrie Randgris
+//1768 //Gloom_Under_Night
+//1779 //Ktullanux
+//1785 //Atroce
+//1832 //Ifrit
+//1871 //Fallen_Bishop
+//1874 //Berzebub
+//1885 //Gopinich
+//3074 //Timeholder
+//1388 //ARCHANGELING
+
+
+
+//= = = = = = = = = = = = = = = = ตามสถานการณ์= = = = = = = = = = = = = = = = = = = = 
+
+//1219 //Abysmal Knight
+
+//1169 //Skeleton Worker
+//1267 //Carat
+

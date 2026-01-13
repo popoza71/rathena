@@ -72,6 +72,8 @@ int32 current_equip_card_id; /// To prevent card-stacking (from jA) [Skotlex]
 // We need it for new cards 15 Feb 2005, to check if the combo cards are insrerted into the CURRENT weapon only to avoid cards exploits
 int16 current_equip_opt_index; /// Contains random option index of an equipped item. [Secret]
 
+std::vector<int> mobs_no_card;
+
 uint16 SCDisabled[SC_MAX]; ///< List of disabled SC on map zones. [Cydh]
 
 static uint16 status_calc_str(block_list *,status_change *,int32);
@@ -16439,6 +16441,33 @@ void StatusDatabase::loadingFinished(){
 StatusDatabase status_db;
 
 /**
+ */
+//static bool status_readdb_mob_no_card(char* fields[], int columns, int current)
+static bool status_readdb_mob_no_card(char* fields[], size_t columns, size_t current)
+{
+	int mobid;
+
+	if (columns < 1) {
+		ShowError("status_readdb_mob_no_card: missing mob id (line %zu).\n", current);
+		return false;
+	}
+
+	mobid = atoi(fields[0]);
+
+	if (!mob_db.find(mobid)) {
+		ShowError("status_readdb_mob_no_card: Invalid mob id %d (line %zu).\n", mobid, current);
+		return false;
+	}
+
+	if (util::vector_exists(mobs_no_card, mobid))
+		return true;
+
+	mobs_no_card.push_back(mobid);
+	return true;
+}
+
+
+/**
  * Sets defaults in tables and starts read db functions
  * sv_readdb reads the file, outputting the information line-by-line to
  * previous functions above, separating information by delimiter
@@ -16455,6 +16484,10 @@ void status_readdb( bool reload ){
 		"/" DBIMPORT,
 		//add other path here
 	};
+
+	if( reload ){
+		mobs_no_card = {};
+	}
 
 	// read databases
 	// path,filename,separator,mincol,maxcol,maxrow,func_parsor
@@ -16474,6 +16507,10 @@ void status_readdb( bool reload ){
 		}
 
 		sv_readdb(dbsubpath1, "status_disabled.txt", ',', 2, 2, -1, &status_readdb_status_disabled, i > 0);
+		//sv_readdb(dbsubpath1, "custom/mobs_no_card.txt", ',', 1, 1, -1, &status_readdb_mob_no_card, i > 0);
+		sv_readdb(dbsubpath1, "custom/mobs_no_card.txt", ',', 1, 1, (size_t)-1, status_readdb_mob_no_card, i > 0);
+
+
 
 		aFree(dbsubpath1);
 		aFree(dbsubpath2);
@@ -16518,4 +16555,5 @@ void do_final_status(void) {
 	status_db.clear();
 	elemental_attribute_db.clear();
 	delay_status.clear();
+	mobs_no_card = {};
 }
