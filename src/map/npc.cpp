@@ -2431,10 +2431,24 @@ static enum e_CASHSHOP_ACK npc_cashshop_process_payment(npc_data *nd, int32 pric
 
 	switch(nd->subtype) {
 		case NPCTYPE_CASHSHOP:
-			if (cost[1] < points || cost[0] < (price - points))
-				return ERROR_TYPE_MONEY;
+ 			{
+ 				char output[CHAT_SIZE_MAX];
+ 				
+ 				memset(output, '\0', sizeof(output));
+ 				if (cost[1] < points || cost[0] < (price - points)) {
+					return ERROR_TYPE_MONEY;
+ 				}
+
+ 				if ((price - points) <= 0) {
+ 					return ERROR_TYPE_PURCHASE_FAIL;
+ 				}
+
+			//if (cost[1] < points || cost[0] < (price - points))
+			//	return ERROR_TYPE_MONEY;
+
 			if (pc_paycash(sd, price, points, LOG_TYPE_NPC) <= 0) {
 				return ERROR_TYPE_MONEY;
+				}
 			}
 			break;
 		case NPCTYPE_ITEMSHOP:
@@ -2492,6 +2506,10 @@ static enum e_CASHSHOP_ACK npc_cashshop_process_payment(npc_data *nd, int32 pric
 					clif_messagecolor(sd, color_table[COLOR_RED], output, false, SELF);
 					return ERROR_TYPE_PURCHASE_FAIL;
 				}
+
+ 				if ((price - points) <= 0) {
+ 					return ERROR_TYPE_PURCHASE_FAIL;
+ 				}
 
 				if( !set_reg_num( nullptr, sd, add_str( nd->u.shop.pointshop_str ), nd->u.shop.pointshop_str, cost[0] - ( price - points ), nullptr ) ){
 					return ERROR_TYPE_PURCHASE_FAIL;
