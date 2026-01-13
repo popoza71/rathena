@@ -1437,7 +1437,7 @@ bool chclif_parse_reqrename( int32 fd, char_session_data& sd ){
 
 	safestrncpy( name, p->new_name, NAME_LENGTH );
 
-	normalize_name( name, TRIM_CHARS );
+	//normalize_name( name, TRIM_CHARS );
 
 	char esc_name[NAME_LENGTH * 2 + 1];
 
@@ -1561,7 +1561,7 @@ bool chclif_parse_ackrename( int32 fd, char_session_data& sd ){
 
 	safestrncpy( name, p->new_name, NAME_LENGTH );
 
-	normalize_name( name, TRIM_CHARS );
+	//normalize_name( name, TRIM_CHARS );
 	Sql_EscapeStringLen( sql_handle, esc_name, name, strnlen( name, NAME_LENGTH ) );
 
 	safestrncpy( sd.new_name, name, NAME_LENGTH );
