@@ -29,7 +29,7 @@ The format of this file is as follows:
 	8. Pet Commands
 	9. Homunculus Commands
 	10. Channel Commands
-	11. Clan Commands
+	11. Clan Commands 
 
 ======================
 | 1. System Commands |
