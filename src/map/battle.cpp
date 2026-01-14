@@ -3322,11 +3322,6 @@ static bool is_attack_hitting(struct Damage* wd, block_list *src, block_list *ta
 					hitrate += hitrate * 50 / 100;
 #endif
 				break;
-#ifdef RENEWAL
-			case RG_BACKSTAP:
-				hitrate += skill_lv; // !TODO: What's the rate increase?
-				break;
-#endif
 			case RK_SONICWAVE:
 				hitrate += hitrate * 3 * skill_lv / 100; // !TODO: Confirm the hitrate bonus
 				break;
@@ -4717,9 +4712,6 @@ static int32 battle_calc_attack_skill_ratio(struct Damage* wd, block_list *src,b
 			else
 				skillratio += 10 * skill_lv; //Outer 5x5 circle takes 100%+10%*level damage [Playtester]
 			break;
-		case HT_POWER:
-			skillratio += -50 + 8 * sstatus->str;
-			break;
 		case MA_DOUBLE:
 			skillratio += 10 * (skill_lv - 1);
 			break;
@@ -4805,22 +4797,6 @@ static int32 battle_calc_attack_skill_ratio(struct Damage* wd, block_list *src,b
 			break;
 		case NPC_REVERBERATION_ATK:
 			skillratio += 400 + 200 * skill_lv;
-			break;
-		case RG_BACKSTAP:
-			if(sd && sd->status.weapon == W_BOW && battle_config.backstab_bow_penalty)
-				skillratio += (200 + 40 * skill_lv) / 2;
-			else
-				skillratio += 200 + 40 * skill_lv;
-			break;
-		case RG_RAID:
-#ifdef RENEWAL
-			skillratio += -100 + 50 + skill_lv * 150;
-#else
-			skillratio += 40 * skill_lv;
-#endif
-			break;
-		case RG_INTIMIDATE:
-			skillratio += 30 * skill_lv;
 			break;
 		case CR_SHIELDCHARGE:
 			skillratio += 20 * skill_lv;
@@ -5103,13 +5079,6 @@ static int32 battle_calc_attack_skill_ratio(struct Damage* wd, block_list *src,b
 			}
 			break;
 #endif
-		case HT_PHANTASMIC:
-#ifdef RENEWAL
-			skillratio += 400;
-#else
-			skillratio += 50;
-#endif
-			break;
 		case MO_BALKYOUNG:
 #ifdef RENEWAL
 			skillratio += 700;
