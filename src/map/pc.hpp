@@ -276,10 +276,18 @@ struct weapon_data {
 	int16 hp_drain_class[CLASS_MAX];
 	int16 sp_drain_class[CLASS_MAX];
 
+	int16 magic_hp_drain_race[RC_MAX];
+	int16 magic_hp_drain_class[CLASS_MAX];
+	int16 magic_sp_drain_race[RC_MAX];
+	int16 magic_sp_drain_class[CLASS_MAX];
+
+
 	struct drain_data {
 		int16 rate; ///< Success rate 10000 = 100%
 		int16 per;  ///< Drain value/rate per attack
-	} hp_drain_rate, sp_drain_rate;
+	//} hp_drain_rate, sp_drain_rate;
+	} hp_drain_rate, sp_drain_rate, magic_hp_drain_rate, magic_sp_drain_rate;
+
 
 	std::vector<s_item_bonus> add_dmg;
 	std::vector<s_addele2> addele2;

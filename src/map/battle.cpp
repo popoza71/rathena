@@ -9491,6 +9491,8 @@ struct Damage battle_calc_magic_attack(block_list *src,block_list *target,uint16
 	else if (mapdata->getMapFlag(MF_BATTLEGROUND))
 		ad.damage = battle_calc_bg_damage(src,target,ad.damage,skill_id,ad.flag);
 
+	battle_magic_drain(src, target, ad.damage, ad.damage2);
+
 	// Skill damage adjustment
 	if ((skill_damage = battle_skill_damage(src,target,skill_id)) != 0)
 		MATK_ADDRATE(skill_damage);
@@ -9905,6 +9907,8 @@ struct Damage battle_calc_misc_attack(block_list *src,block_list *target,uint16 
 		md.damage = battle_calc_gvg_damage(src,target,md.damage,skill_id,md.flag);
 	else if(mapdata->getMapFlag(MF_BATTLEGROUND))
 		md.damage = battle_calc_bg_damage(src,target,md.damage,skill_id,md.flag);
+
+	battle_magic_drain(src, target, md.damage, md.damage2);
 
 	// Skill damage adjustment
 	if ((skill_damage = battle_skill_damage(src,target,skill_id)) != 0)
@@ -12366,6 +12370,82 @@ void battle_adjust_conf()
 	battle_config.dynamic_mobs = 1;
 #endif
 }
+
+void battle_magic_drain(struct block_list *src, struct block_list *target, int64 rdamage, int64 ldamage)
+{
+	nullpo_retv(src);
+	nullpo_retv(target);
+
+	if(src->type != BL_PC)
+		return;
+
+	struct weapon_data *wd;
+	const status_data* tstatus = status_get_status_data(*target);
+	map_session_data *sd = BL_CAST(BL_PC, src);
+	int64 *damage;
+
+	if(!sd)
+		return;
+
+	int race = tstatus->race;
+	int class_ = tstatus->class_;
+
+	int thp = 0, // HP gained
+		tsp = 0, // SP gained
+		hp = 0, sp = 0;
+
+	if (!CHK_RACE(race) && !CHK_CLASS(class_))
+		return;
+
+	for (int i = 0; i < 4; i++) {
+		//First two iterations: Right hand
+		if (i < 2) {
+			wd = &sd->right_weapon;
+			damage = &rdamage;
+		} else {
+			wd = &sd->left_weapon;
+			damage = &ldamage;
+		}
+
+		if (i == 1 || i == 3) {
+			hp = wd->magic_hp_drain_class[class_] + wd->magic_hp_drain_class[CLASS_ALL];
+			hp += battle_calc_drain(*damage, wd->magic_hp_drain_rate.rate, wd->magic_hp_drain_rate.per);
+
+			sp = wd->magic_sp_drain_class[class_] + wd->magic_sp_drain_class[CLASS_ALL];
+			sp += battle_calc_drain(*damage, wd->magic_sp_drain_rate.rate, wd->magic_sp_drain_rate.per);
+
+
+			if( hp ) {
+				//rhp += hp;
+				thp += hp;
+			}
+
+			if( sp ) {
+				//rsp += sp;
+				tsp += sp;
+			}
+		} else {
+			hp = wd->magic_hp_drain_race[race] + wd->magic_hp_drain_race[RC_ALL];
+			sp = wd->magic_sp_drain_race[race] + wd->magic_sp_drain_race[RC_ALL];
+
+			if( hp ) {
+				//rhp += hp;
+				thp += hp;
+			}
+
+			if( sp ) {
+				//rsp += sp;
+				tsp += sp;
+			}
+		}
+	}
+
+	if (!thp && !tsp)
+		return;
+
+	status_heal(sd, thp, tsp, battle_config.show_hp_sp_drain ? 3 : 1);
+}
+
 
 /*=====================================
  * Read battle.conf settings from file
