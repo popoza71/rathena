@@ -1448,6 +1448,10 @@ enum sc_type : int16 {
 	SC_WIND_CHARM_POWER,
 	SC_GROUND_CHARM_POWER,
 
+
+	//custom bonus buff
+	SC_BARTER_CRAFT_BONUS = 1805,
+
 	//custom buff
 	SC_CUSTOM_BUFF_1 = 2011,
 	SC_CUSTOM_BUFF_2 = 2012,
@@ -3000,6 +3004,10 @@ enum efst_type : int16{
 
 	EFST_BLOCK = 1688,
 
+
+	//custom buff status effects
+	EFST_BARTER_CRAFT_BONUS = 2215,
+
 	EFST_CUSTOM_BUFF_1 = 2301,
 	EFST_CUSTOM_BUFF_2,
 	EFST_CUSTOM_BUFF_3,
@@ -3051,6 +3059,7 @@ enum efst_type : int16{
 	EFST_GUILD_BUFF_3_3,
 	EFST_GUILD_BUFF_3_4,
 	EFST_GUILD_BUFF_3_5,
+
 
 
 /// @APIHOOK_END

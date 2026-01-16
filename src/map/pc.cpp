@@ -4460,6 +4460,9 @@ void pc_bonus(map_session_data *sd,int32 type,int32 val)
 			if (sd->state.lr_flag != LR_FLAG_ARROW)
 				sd->bonus.itemsphealrate2 += val;
 			break;
+		case SP_BARTER_CRAFT:
+			sd->bonus.barter_craft_bonus += val;
+			break;
 		case SP_CHP_MAGIC_DRAIN: // bonus bHPDrainValue,n;
 			if(!sd->state.lr_flag) {
 				sd->right_weapon.magic_hp_drain_class[CLASS_NORMAL] += val;

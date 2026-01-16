@@ -23246,6 +23246,7 @@ void clif_parse_barter_close( int32 fd, map_session_data* sd ){
 	if( sd->state.barter_open ){
 		sd->npc_shopid = 0;
 		sd->state.barter_open = false;
+		sd->state.craft_barter = false;
 	}
 #endif
 }
@@ -23346,6 +23347,51 @@ void clif_barter_extended_open( map_session_data& sd, npc_data& nd ){
 	}
 
 	sd.state.barter_extended_open = true;
+
+	// re-init
+	sd.state.craft_barter = false;
+
+	if(barter->is_craft){
+		sd.state.craft_barter = true;
+		char output[CHAT_SIZE_MAX];
+		memset(output, '\0', sizeof(output));
+		sprintf(output, msg_txt(NULL, 3001));
+		clif_broadcast(&sd, output, strlen(output) + 1, BC_BLUE, SELF);
+		clif_messagecolor(&sd, color_table[COLOR_DEFAULT], msg_txt(NULL, 3002), false, SELF);
+		clif_messagecolor(&sd, color_table[COLOR_DEFAULT], msg_txt(NULL, 3003), false, SELF);
+
+		uint16 carft_bonus = 0;
+
+		carft_bonus += sd.bonus.barter_craft_bonus;
+		if(sd.sc.getSCE(SC_BARTER_CRAFT_BONUS))
+			carft_bonus += sd.sc.getSCE(SC_BARTER_CRAFT_BONUS)->val1;
+
+		char carft_msg[CHAT_SIZE_MAX];
+
+		for( const auto& itemPair : barter->items ){
+			std::shared_ptr<item_data> id = item_db.find(itemPair.second->nameid);
+
+			memset(carft_msg, '\0', sizeof(carft_msg));
+
+			if (itemPair.second->protectitem){
+				std::shared_ptr<item_data> id2 = item_db.find(itemPair.second->protectitem);
+
+				if(!itemPair.second->inherit_str.length())
+					sprintf(carft_msg, msg_txt(NULL, 3006),item_db.create_item_link(id).c_str(),(float)itemPair.second->craft_rate/100,(float)carft_bonus/100,item_db.create_item_link(id2).c_str(),itemPair.second->protect_str.c_str());
+				else
+					sprintf(carft_msg, msg_txt(NULL, 3007),item_db.create_item_link(id).c_str(),(float)itemPair.second->craft_rate/100,(float)carft_bonus/100,itemPair.second->inherit_str.c_str(),item_db.create_item_link(id2).c_str(),itemPair.second->protect_str.c_str());
+			}else{
+
+				if(!itemPair.second->inherit_str.length())
+					sprintf(carft_msg, msg_txt(NULL, 3004),item_db.create_item_link(id).c_str(),(float)itemPair.second->craft_rate/100,(float)carft_bonus/100);
+				else
+					sprintf(carft_msg, msg_txt(NULL, 3005),item_db.create_item_link(id).c_str(),(float)itemPair.second->craft_rate/100,(float)carft_bonus/100,itemPair.second->inherit_str.c_str());
+			}
+
+			clif_messagecolor(&sd, color_table[COLOR_DEFAULT], carft_msg, false, SELF);
+		}
+		clif_messagecolor(&sd, color_table[COLOR_DEFAULT], msg_txt(NULL, 3008), false, SELF);
+	}
 
 	PACKET_ZC_NPC_EXPANDED_BARTER_MARKET_ITEMINFO* p = reinterpret_cast<PACKET_ZC_NPC_EXPANDED_BARTER_MARKET_ITEMINFO*>( packet_buffer );
 
@@ -23459,6 +23505,18 @@ void clif_parse_barter_extended_buy( int32 fd, map_session_data* sd ){
 		return;
 	}
 
+	if(barter->is_craft && entries > 1){
+		clif_messagecolor(sd, color_table[COLOR_LIGHT_GREEN], msg_txt(NULL, 3009), false, SELF);
+		return;
+	}
+
+	if(barter->is_craft && p->list[0].amount > 1){
+		clif_messagecolor(sd, color_table[COLOR_LIGHT_GREEN], msg_txt(NULL, 3013), false, SELF);
+		return;
+	}
+
+	int16 bindex = -1;
+
 	std::vector<s_barter_purchase> purchases;
 
 	purchases.reserve( entries );
@@ -23471,6 +23529,8 @@ void clif_parse_barter_extended_buy( int32 fd, map_session_data* sd ){
 		if( item == nullptr ){
 			return;
 		}
+
+		bindex = item->index;
 
 		for( int32 j = i + 1; j < entries; j++ ){
 			// Same shop index
@@ -23499,7 +23559,8 @@ void clif_parse_barter_extended_buy( int32 fd, map_session_data* sd ){
 		purchases.push_back( purchase );
 	}
 
-	clif_npc_buy_result( sd, npc_barter_purchase( *sd, barter, purchases )  );
+	//clif_npc_buy_result( sd, npc_barter_purchase( *sd, barter, purchases )  );
+	clif_npc_buy_result(sd, npc_barter_purchase(*sd, barter, purchases, bindex));
 #endif
 }
 

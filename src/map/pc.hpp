@@ -467,6 +467,7 @@ public:
 		bool roulette_open;
 		t_itemid item_reform;
 		uint64 item_enchant_index;
+		bool craft_barter;
 	} state;
 	struct {
 		unsigned char no_weapon_damage, no_magic_damage, no_misc_damage;
@@ -688,6 +689,7 @@ public:
 		int16 critical_rangeatk;
 		int16 weapon_atk_rate, weapon_matk_rate;
 		int32 skill_ratio;
+		int32 barter_craft_bonus;
 	} bonus;
 	// zeroed vars end here.
 

@@ -85,6 +85,16 @@ struct s_npc_barter_requirement{
 	t_itemid nameid;
 	uint16 amount;
 	int8 refine;
+	bool protect;
+};
+
+struct s_npc_barter_item_inherit{
+	int16 slot;
+	bool refine;
+	bool card;
+	bool grade;
+	bool randomopt;
+
 };
 
 struct s_npc_barter_item{
@@ -95,6 +105,15 @@ struct s_npc_barter_item{
 	uint32 price;
 	int8 refine;
 	std::map<uint16, std::shared_ptr<s_npc_barter_requirement>> requirements;
+	uint16 craft_rate;
+	bool announce;
+	int16 effect_id;
+	int16 f_effect_id;
+	std::shared_ptr<s_npc_barter_item_inherit> inherit;
+	t_itemid protectitem;
+	std::string protect_str;
+	std::string inherit_str;
+
 };
 
 struct s_npc_barter{
@@ -106,6 +125,8 @@ struct s_npc_barter{
 	int16 sprite;
 	std::map<uint16, std::shared_ptr<s_npc_barter_item>> items;
 	int32 npcid;
+	bool is_craft;
+	std::string waitingroom;
 
 	~s_npc_barter();
 };
@@ -1628,7 +1649,8 @@ int32 npc_buysellsel(map_session_data* sd, int32 id, int32 type);
 e_purchase_result npc_buylist(map_session_data* sd, std::vector<s_npc_buy_list>& item_list);
 static int32 npc_buylist_sub(map_session_data* sd, std::vector<s_npc_buy_list>& item_list, npc_data* nd);
 uint8 npc_selllist(map_session_data* sd, int32 list_length, const PACKET_CZ_PC_SELL_ITEMLIST_sub* item_list);
-e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_npc_barter> barter, std::vector<s_barter_purchase>& purchases );
+//e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_npc_barter> barter, std::vector<s_barter_purchase>& purchases );
+e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_npc_barter> barter, std::vector<s_barter_purchase>& purchases, int16 index = -1 );
 void npc_parse_mob2(struct spawn_data* mob);
 npc_data* npc_add_warp(char* name, int16 from_mapid, int16 from_x, int16 from_y, int16 xs, int16 ys, uint16 to_mapindex, int16 to_x, int16 to_y);
 int32 npc_globalmessage(const char* name,const char* mes);

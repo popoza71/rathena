@@ -411,6 +411,36 @@ uint64 BarterDatabase::parseBodyNode( const ryml::NodeRef& node ){
 		barter->npcid = 0;
 	}
 
+	if (this->nodeExists( node, "CraftBarter" )){
+		bool is_craft;
+
+		if (!this->asBool( node, "CraftBarter", is_craft)){
+			return 0;
+		}
+
+		barter->is_craft = is_craft;
+
+	}else{
+		if ( !exists ){
+			barter->is_craft = false;
+		}
+	}
+
+	if (this->nodeExists( node, "WaitingRoom" )){
+		std::string chat;
+
+		if (!this->asString( node, "WaitingRoom", chat)){
+			return 0;
+		}
+
+		barter->waitingroom = chat;
+
+	}else{
+		if ( !exists ){
+			barter->waitingroom = {};
+		}
+	}
+
 	if( this->nodeExists( node, "Map" ) ){
 		std::string map;
 
@@ -637,6 +667,198 @@ uint64 BarterDatabase::parseBodyNode( const ryml::NodeRef& node ){
 				}
 			}
 
+			if (this->nodeExists( itemNode, "Rate")){
+				uint16 rate;
+
+				if (!this->asUInt16Rate(itemNode, "Rate", rate)){
+					return 0;
+				}
+
+				item->craft_rate = rate;
+			}else{
+				if ( !item_exists ){
+					item->craft_rate = 10000;
+				}
+			}
+
+			if (this->nodeExists( itemNode, "Announce")){
+				bool announce;
+
+				if (!this->asBool( itemNode, "Announce", announce)){
+					return 0;
+				}
+
+				item->announce = announce;
+			}else{
+				if ( !item_exists ){
+					item->announce = false;
+				}
+			}
+
+			if (this->nodeExists( itemNode, "Effect")){
+				int16 effect_id;
+
+				if (!this->asInt16( itemNode, "Effect", effect_id)){
+					return 0;
+				}
+
+				item->effect_id = effect_id;
+			}else{
+				if ( !item_exists ){
+					item->effect_id = -1;
+				}
+			}
+
+			if (this->nodeExists( itemNode, "FailEffect")){
+				int16 f_effect_id;
+
+				if (!this->asInt16( itemNode, "FailEffect", f_effect_id)){
+					return 0;
+				}
+
+				item->f_effect_id = f_effect_id;
+			}else{
+				if ( !item_exists ){
+					item->f_effect_id = -1;
+				}
+			}
+
+			if (this->nodeExists( itemNode, "ProtectItem")){
+				std::string itemname;
+
+				if (!this->asString( itemNode, "ProtectItem", itemname)){
+					return 0;
+				}
+
+				std::shared_ptr<item_data> t_id = item_db.search_aegisname( itemname.c_str() );
+
+				if( t_id == nullptr ){
+					this->invalidWarning( itemNode["ProtectItem"], "Item %s does not exist.\n", itemname.c_str() );
+					return 0;
+				}
+
+				item->protectitem = t_id->nameid;
+			}else{
+				if ( !item_exists ){
+					item->protectitem = 0;
+				}
+			}
+
+			item->inherit_str = {};
+
+			if (this->nodeExists( itemNode, "Inherit")){
+				for( const ryml::NodeRef& inheritNode : itemNode["Inherit"] ){
+
+					std::shared_ptr<s_npc_barter_item_inherit> inherit;
+
+					bool is_inherit = false;
+
+					if(this->nodeExists(inheritNode, "Index")){
+						int16 index;
+
+						if(!this->asInt16(inheritNode, "Index", index)){
+							return 0;
+						}
+
+						inherit = std::make_shared<s_npc_barter_item_inherit>();
+						inherit->slot = index;
+						is_inherit = true;
+
+						item->inherit_str += "[" + std::to_string(index+1) + "";
+
+					}else{
+						inherit = nullptr;
+					}
+
+					if(this->nodeExists(inheritNode, "Refine") && is_inherit){
+						bool refine;
+
+						if(!this->asBool(inheritNode, "Refine", refine)){
+							return 0;
+						}
+
+						inherit->refine = refine;
+
+						if(refine == true)
+							item->inherit_str += ":R";
+
+					}else{
+						inherit->refine = false;
+					}
+
+					if(this->nodeExists(inheritNode, "Card") && is_inherit){
+						bool card;
+
+						if(!this->asBool(inheritNode, "Card", card)){
+							return 0;
+						}
+
+						inherit->card = card;
+
+						if(card == true){
+							if(item->inherit_str.length() == 2)
+								item->inherit_str += ":C";
+							else
+								item->inherit_str += ",C";
+						}
+
+					}else{
+						inherit->card = false;
+					}
+
+					if(this->nodeExists(inheritNode, "Grade") && is_inherit){
+						bool grade;
+
+						if(!this->asBool(inheritNode, "Grade", grade)){
+							return 0;
+						}
+
+						inherit->grade = grade;
+
+						if(grade == true){
+							if(item->inherit_str.length() == 2)
+								item->inherit_str += ":G";
+							else
+								item->inherit_str += ",G";
+						}
+
+					}else{
+						inherit->grade = false;
+					}
+
+					if(this->nodeExists(inheritNode, "Randomopt") && is_inherit){
+						bool randomopt;
+
+						if(!this->asBool(inheritNode, "Randomopt", randomopt)){
+							return 0;
+						}
+
+						inherit->randomopt = randomopt;
+
+						if(randomopt == true){
+							if(item->inherit_str.length() == 2)
+								item->inherit_str += ":O";
+							else
+								item->inherit_str += ",O";
+						}
+					}else{
+						inherit->randomopt = false;
+					}
+
+					if(is_inherit && inherit){
+						item->inherit = inherit;
+						item->inherit_str += "]";
+					}
+				}
+
+			}else{
+				if ( !item_exists ){
+					item->inherit = nullptr;
+				}
+			}
+
+			item->protect_str = {};
+
 			if( this->nodeExists( itemNode, "RequiredItems" ) ){
 				for( const ryml::NodeRef& requiredItemNode : itemNode["RequiredItems"] ){
 					uint16 requirement_index;
@@ -724,6 +946,27 @@ uint64 BarterDatabase::parseBodyNode( const ryml::NodeRef& node ){
 						}
 					}
 
+
+					if(this->nodeExists(requiredItemNode, "Protect")){
+
+						bool protect;
+
+						if(!this->asBool(requiredItemNode, "Protect", protect)){
+							return 0;
+						}
+
+						requirement->protect = protect;
+
+						if(item->protect_str.length() == 0)
+							item->protect_str += std::to_string(requirement->index+1);
+						else
+							item->protect_str += ',' + std::to_string(requirement->index+1);
+
+					}else{
+						requirement->protect = false;
+					}
+
+
 					if( !requirement_exists ){
 						item->requirements[requirement->index] = requirement;
 					}
@@ -755,6 +998,9 @@ void BarterDatabase::loadingFinished(){
 		std::shared_ptr<s_npc_barter> barter = pair.second;
 
 		bool extended = false;
+
+		if(barter->is_craft)
+			extended = true;
 
 		// Check if it has to use the extended barter feature or not
 		for( const auto& itemPair : barter->items ){
@@ -836,6 +1082,10 @@ void BarterDatabase::loadingFinished(){
 					clif_spawn( nd );
 				}
 			}
+
+			if(barter->waitingroom.length())
+				chat_createnpcchat(nd, barter->waitingroom.c_str(), 0, 1, 0, "", 0, 1, MAX_LEVEL);
+
 		}else{
 			map_addiddb( nd );
 		}
@@ -3155,12 +3405,44 @@ uint8 npc_selllist(map_session_data* sd, int32 list_length, const PACKET_CZ_PC_S
 	return 0;
 }
 
-e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_npc_barter> barter, std::vector<s_barter_purchase>& purchases ){
+//e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_npc_barter> barter, std::vector<s_barter_purchase>& purchases ){
+e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_npc_barter> barter, std::vector<s_barter_purchase>& purchases, int16 index ){
 	uint64 requiredZeny = 0;
 	uint32 requiredWeight = 0;
 	uint32 reducedWeight = 0;
 	uint16 requiredSlots = 0;
 	uint32 requiredItems[MAX_INVENTORY] = { 0 };
+	uint32 prequiredItems[MAX_INVENTORY] = { 0 };
+
+	bool protect = false;
+	int16 pindex = -1;
+	t_itemid pitem = 0;
+	int16 inherit_slot = -1;
+	struct item inherit = {};
+	std::shared_ptr<s_npc_barter_item> sub_barter = {};
+	int c = 0;
+
+	for(auto &ib : barter->items){
+
+		if(c == index && ib.second->protectitem){
+			protect = true;
+			pitem = ib.second->protectitem;
+		}
+
+		if(c == index && ib.second->inherit != nullptr){
+			std::shared_ptr<item_data> id = item_db.find(ib.second->nameid);
+
+			if(id->type == IT_WEAPON || id->type == IT_ARMOR){
+				sub_barter = ib.second;
+				inherit_slot = ib.second->inherit->slot;
+			}
+			break;
+		}
+		c++;
+	}
+
+	c = 0;
+
 
 	for( s_barter_purchase& purchase : purchases ){
 		purchase.data = item_db.find( purchase.item->nameid ).get();
@@ -3228,6 +3510,10 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 							return e_purchase_result::PURCHASE_FAIL_GOODS;
 						}
 
+						prequiredItems[j] += requirement->amount * amount;
+						if(requirementPair.second->protect)
+							prequiredItems[j] = 0;
+
 						// Cancel the loop
 						break;
 					}
@@ -3272,6 +3558,13 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 
 							// Mark it as taken
 							requiredItems[j] = 1;
+							prequiredItems[j] = 1;
+
+							if(inherit_slot > -1 && inherit_slot == c)
+								inherit = sd.inventory.u.items_inventory[j];
+
+							if(requirementPair.second->protect)
+								prequiredItems[j] = 0;
 
 							// Cancel the loop
 							break;
@@ -3317,6 +3610,13 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 
 										// Mark it as taken
 										requiredItems[j] = 1;
+										prequiredItems[j] = 1;
+
+										if(inherit_slot > -1 && inherit_slot == c)
+											inherit = sd.inventory.u.items_inventory[j];
+
+										if(requirementPair.second->protect)
+											prequiredItems[j] = 0;
 
 										// Cancel the loop
 										break;
@@ -3342,6 +3642,7 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 			}
 
 			reducedWeight += ( purchase.amount * requirement->amount * id->weight );
+			c++;
 		}
 	}
 
@@ -3359,10 +3660,20 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 		return e_purchase_result::PURCHASE_FAIL_COUNT;
 	}
 
-	for( int32 i = 0; i < MAX_INVENTORY; i++ ){
-		if( requiredItems[i] > 0 ){
-			if( pc_delitem( &sd, i, requiredItems[i], 0, 0, LOG_TYPE_BARTER ) != 0 ){
-				return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+//	for( int32 i = 0; i < MAX_INVENTORY; i++ ){
+//		if( requiredItems[i] > 0 ){
+//			if( pc_delitem( &sd, i, requiredItems[i], 0, 0, LOG_TYPE_BARTER ) != 0 ){
+//				return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+	if(protect && pitem)
+		pindex = pc_search_inventory( &sd, pitem );
+
+	if(!sd.state.craft_barter){
+		for( int i = 0; i < MAX_INVENTORY; i++ ){
+			if( requiredItems[i] > 0 ){
+				if( pc_delitem( &sd, i, requiredItems[i], 0, 0, LOG_TYPE_BARTER ) != 0 ){
+					return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+				}
+
 			}
 		}
 	}
@@ -3372,13 +3683,109 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 	}
 
 	for( s_barter_purchase& purchase : purchases ){
-		if( purchase.item->stockLimited ){
-			purchase.item->stock -= purchase.amount;
+//		if( purchase.item->stockLimited ){
+//			purchase.item->stock -= purchase.amount;
+		if (!sd.state.craft_barter){
+			if( purchase.item->stockLimited ){
+				purchase.item->stock -= purchase.amount;
 
-			if( Sql_Query( mmysql_handle, "REPLACE INTO `%s` (`name`,`index`,`amount`) VALUES ( '%s', '%hu', '%hu' )", barter_table, barter->name.c_str(), purchase.item->index, purchase.item->stock ) != SQL_SUCCESS ){
-				Sql_ShowDebug( mmysql_handle );
-				return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+
+//			if( Sql_Query( mmysql_handle, "REPLACE INTO `%s` (`name`,`index`,`amount`) VALUES ( '%s', '%hu', '%hu' )", barter_table, barter->name.c_str(), purchase.item->index, purchase.item->stock ) != SQL_SUCCESS ){
+//				Sql_ShowDebug( mmysql_handle );
+//				return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+
+				if( Sql_Query( mmysql_handle, "REPLACE INTO `%s` (`name`,`index`,`amount`) VALUES ( '%s', '%hu', '%hu' )", barter_table, barter->name.c_str(), purchase.item->index, purchase.item->stock ) != SQL_SUCCESS ){
+					Sql_ShowDebug( mmysql_handle );
+					return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+				}
 			}
+		}
+
+		if (sd.state.craft_barter){
+			int success = 0, fail = 0;
+
+			struct item it = {};
+
+			it.nameid = purchase.item->nameid;
+			it.identify = true;
+
+			if(inherit_slot > -1 && sub_barter && sub_barter->inherit != nullptr){
+
+				if(sub_barter->inherit->refine)
+					it.refine = inherit.refine;
+
+				if(sub_barter->inherit->card)
+					memcpy(it.card,inherit.card,sizeof(it.card));
+
+				if(sub_barter->inherit->grade)
+					it.enchantgrade = inherit.enchantgrade;
+
+				if(sub_barter->inherit->randomopt)
+					memcpy(it.option,inherit.option,sizeof(it.option));
+			}
+
+			uint16 bonus_chance = 0;
+
+			bonus_chance += sd.bonus.barter_craft_bonus;
+			if(sd.sc.getSCE(SC_BARTER_CRAFT_BONUS))
+				bonus_chance += sd.sc.getSCE(SC_BARTER_CRAFT_BONUS)->val1;
+
+			if(rnd()%10000<(purchase.item->craft_rate+bonus_chance))
+				success++;
+			else
+				fail++;
+
+			std::shared_ptr<item_data> tmp_id = item_db.find(purchase.item->nameid);
+			char ann_msg[CHAT_SIZE_MAX];
+
+			if(fail && pindex > -1)
+				memcpy(requiredItems,prequiredItems,sizeof(prequiredItems));
+
+			if(pindex > -1)
+				pc_delitem( &sd, pindex, purchase.amount, 0, 0, LOG_TYPE_BARTER );
+
+			for( int i = 0; i < MAX_INVENTORY; i++ ){
+				if( requiredItems[i] > 0 ){
+					if( pc_delitem( &sd, i, requiredItems[i], 0, 0, LOG_TYPE_BARTER ) != 0 ){
+						return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+					}
+				}
+			}
+
+			if(success){
+				pc_additem( &sd, &it, success, LOG_TYPE_BARTER );
+
+				sprintf(ann_msg,msg_txt(NULL,3010),item_db.create_item_link(it).c_str());
+				clif_messagecolor(&sd, color_table[COLOR_CYAN], ann_msg, false, SELF);
+
+				if(purchase.item->effect_id > -1)
+					clif_specialeffect(&sd, purchase.item->effect_id, SELF);
+
+				if(purchase.item->announce){
+					sprintf(ann_msg, msg_txt(NULL, 3011),sd.status.name,item_db.create_item_link(it).c_str());
+					intif_broadcast2(ann_msg, (int)strlen(ann_msg)+1, 0xff00e9, FW_NORMAL, 12, 0, 0);
+				}
+
+				if( purchase.item->stockLimited ){
+					purchase.item->stock -= purchase.amount;
+
+					if( Sql_Query( mmysql_handle, "REPLACE INTO `%s` (`name`,`index`,`amount`) VALUES ( '%s', '%hu', '%hu' )", barter_table, barter->name.c_str(), purchase.item->index, purchase.item->stock ) != SQL_SUCCESS ){
+						Sql_ShowDebug( mmysql_handle );
+						return e_purchase_result::PURCHASE_FAIL_EXCHANGE_FAILED;
+					}
+				}				
+			}
+
+			if(fail){
+				sprintf(ann_msg,msg_txt(NULL,3012),item_db.create_item_link(it).c_str());
+				clif_messagecolor(&sd, color_table[COLOR_CYAN], ann_msg, false, SELF);
+
+				if(purchase.item->f_effect_id > -1)
+					clif_specialeffect(&sd, purchase.item->f_effect_id, SELF);
+			}
+
+			sd.state.craft_barter = false;
+			return e_purchase_result::PURCHASE_SUCCEED;
 		}
 
 		if( itemdb_isstackable2( purchase.data ) ){
