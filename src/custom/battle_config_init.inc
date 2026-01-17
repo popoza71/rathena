@@ -10,6 +10,15 @@
  * Format:
  *	 { "name", &battle_config.<variable name>, <default value>, <minimum value>, <maximum value> },
  **/
+	//[puppy] RefineUI Options
+	{ "refine_announce_success",      		&battle_config.refine_announce_success,   		0,      0,      MAX_REFINE,		},
+	{ "refine_announce_broken",      		&battle_config.refine_announce_broken,   		0,      0,      MAX_REFINE,		},
+	{ "refine_option_announce",      		&battle_config.refine_option_announce,   		0,      0,      1,              },
+	{ "refine_option_color",      			&battle_config.refine_option_color,		 0xff0000,      0,      INT_MAX,		},
+	{ "refine_option_color_self",			&battle_config.refine_option_color_self, 0xff0000,      0,      INT_MAX,		},
+	{ "refine_broken_color",				&battle_config.refine_broken_color, 	 0xff0000,      0,      INT_MAX,		},
+	{ "refine_normal_color",				&battle_config.refine_normal_color, 	 0xff0000,      0,      INT_MAX,		},
+	{ "blacksmith_downgrade",				&battle_config.blacksmith_downgrade,			0,		0,		1,				},
 
 
 	{ "trickdead_noexp",						&battle_config.trickdead_noexp,					1,      0,      1, },

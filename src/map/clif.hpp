@@ -1509,4 +1509,7 @@ void clif_noask_sub( const map_session_data& sd, const map_session_data& tsd, in
 
 void clif_specialpopup(const map_session_data& sd, int32 id);
 
+//[puppy] RefineUI Options
+std::string clif_hide_name(const char* original_name);
+
 #endif /* CLIF_HPP */

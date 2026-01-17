@@ -21322,7 +21322,8 @@ void clif_parse_merge_item_cancel(int32 fd, map_session_data* sd) {
 	return; // Nothing todo yet
 }
 
-static std::string clif_hide_name(const char* original_name)
+//static std::string clif_hide_name(const char* original_name)
+std::string clif_hide_name(const char* original_name) //[puppy] RefineUI Options
 {
 	std::string censored(original_name);
 	size_t hide = zmin(battle_config.broadcast_hide_name, censored.length() - 1);
@@ -22628,6 +22629,71 @@ void clif_parse_refineui_add( int32 fd, map_session_data* sd ){
 #endif
 }
 
+//[puppy] RefineUI Options
+// Refinet option susses
+void boardcast_refine_message(map_session_data* sd, struct item& item) {
+
+	nullpo_retv(sd);
+
+	std::shared_ptr<item_data> id = item_db.find(item.nameid);
+	// ===== itemlink ด้วย item_db.create_item_link(item) =====
+	std::string item_link = item_db.create_item_link(item);
+	if (item_link.empty()) {
+		item_link = id ? id->ename : "Unknown Item";
+	}
+
+	if (battle_config.refine_announce_success && item.refine >= battle_config.refine_announce_success) {
+
+		char char_name[NAME_LENGTH];
+
+		if (battle_config.broadcast_hide_name) {
+			std::string dispname = clif_hide_name(sd->status.name);
+			safestrncpy(char_name, dispname.c_str(), sizeof(char_name));
+		}
+		else {
+			safestrncpy(char_name, sd->status.name, sizeof(char_name));
+		}
+
+		char boardcast_msg[CHAT_SIZE_MAX];
+		memset(boardcast_msg, '\0', sizeof(boardcast_msg));
+		snprintf(boardcast_msg, sizeof(boardcast_msg), msg_txt(sd, 2306), char_name, item_link.c_str(), item.refine);
+		clif_broadcast2(NULL, boardcast_msg, (int)strlen(boardcast_msg) + 1, battle_config.refine_normal_color, FW_NORMAL, 12, 0, 0, ALL_CLIENT);
+	}
+}
+
+// Refinet option fail
+void boardcast_refine_fail_message(map_session_data* sd, struct item& item) {
+
+	nullpo_retv(sd);
+
+	std::shared_ptr<item_data> id = item_db.find(item.nameid);
+	// ===== itemlink ด้วย item_db.create_item_link(item) =====
+	std::string item_link = item_db.create_item_link(item);
+	if (item_link.empty()) {
+		item_link = id ? id->ename : "Unknown Item";
+	}
+
+	if (battle_config.refine_announce_broken && (item.refine + 1) >= battle_config.refine_announce_broken) {
+
+		char char_name[NAME_LENGTH];
+
+		if (battle_config.broadcast_hide_name) {
+			std::string dispname = clif_hide_name(sd->status.name);
+			safestrncpy(char_name, dispname.c_str(), sizeof(char_name));
+		}
+		else {
+			safestrncpy(char_name, sd->status.name, sizeof(char_name));
+		}
+
+		char boardcast_msg[CHAT_SIZE_MAX];
+		memset(boardcast_msg, '\0', sizeof(boardcast_msg));
+		snprintf(boardcast_msg, sizeof(boardcast_msg), msg_txt(sd, 2302), char_name, item_link.c_str(), item.refine + 1);
+		clif_broadcast2(NULL, boardcast_msg, (int)strlen(boardcast_msg) + 1, battle_config.refine_broken_color, FW_NORMAL, 12, 0, 0, ALL_CLIENT);
+	}
+}
+//[puppy] RefineUI Options
+
+
 /**
  * Client requests to try to refine an item.
  * 0aa3 <index>.W <material>.W <catalyst>.B
@@ -22752,6 +22818,33 @@ void clif_parse_refineui_refine( int32 fd, map_session_data* sd ){
 		log_pick_pc( sd, LOG_TYPE_OTHER, -1, item );
 		// Success
 		item->refine = cap_value( item->refine + 1, 0, MAX_REFINE );
+
+		//[puppy] RefineUI Options
+		std::shared_ptr<s_refineopt> RefineRandomOpt = refine_randomopt_db.find(item->refine);
+		bool found = false;
+		if (RefineRandomOpt != nullptr) {
+			if (RefineRandomOpt->groups.size()) {
+				for (const auto& group : RefineRandomOpt->groups) {
+					if (util::vector_exists(group->items, item->nameid)) {
+						group->option_group->apply_refine(sd, *item, true);
+						clif_delitem(*sd, index, 1, 3);
+						clif_additem(sd, index, 1, 0);
+						found = true;
+						break;
+					}
+				}
+			}
+
+			if (!found && RefineRandomOpt->default_group != nullptr) {
+				RefineRandomOpt->default_group->apply_refine(sd, *item, true);
+				clif_delitem(*sd, index, 1, 3);
+				clif_additem(sd, index, 1, 0);
+			}
+		}
+
+		boardcast_refine_message(sd, *item);
+		//[puppy] RefineUI Options
+
 		log_pick_pc( sd, LOG_TYPE_OTHER, 1, item );
 		clif_misceffect( *sd, NOTIFYEFFECT_REFINE_SUCCESS );
 		clif_refine( *sd, index, ITEMREFINING_SUCCESS );
@@ -22765,13 +22858,44 @@ void clif_parse_refineui_refine( int32 fd, map_session_data* sd ){
 	}else{
 		// Failure
 
+		boardcast_refine_fail_message(sd, *item); //[puppy] RefineUI Options
+
 		if (info->broadcast_failure) {
 			clif_broadcast_refine_result(*sd, item->nameid, item->refine, false);
 		}
+
+		// puppy modify blacksmith_downgrade
+		/*
 		// Blacksmith blessings were used to prevent breaking and downgrading
 		if( blacksmith_amount > 0 ){
 			clif_refine( *sd, index, ITEMREFINING_FAILURE2 );
 			clif_refineui_info( sd, index );
+		*/
+		// Blacksmith blessings behavior (0 = prevent break only, 1 = prevent break & downgrade -1)
+       if( blacksmith_amount > 0 ){
+           if (battle_config.blacksmith_downgrade == 1) {
+               // downgrade by 1
+               item->refine = cap_value(item->refine - 1, 0, MAX_REFINE);
+
+               // update downgrade to random options downgrade
+               std::shared_ptr<s_refineopt> RefineRandomOpt = refine_randomopt_db.find(item->refine);
+               if (RefineRandomOpt != nullptr) {
+                   for (const auto& group : RefineRandomOpt->groups) {
+                       if (util::vector_exists(group->items, item->nameid)) {
+                           group->option_group->apply_refine(sd, *item, false);
+                           clif_delitem(*sd, index, 1, 3);
+                           clif_additem(sd, index, 1, 0);
+                           break;
+                       }
+                   }
+               }
+			   clif_refine(*sd, index, ITEMREFINING_DOWNGRADE);
+           } else {
+			   clif_refine(*sd, index, ITEMREFINING_FAILURE2);
+           }
+           clif_refineui_info(sd, index);
+		// puppy modify blacksmith_downgrade
+
 		// Delete the item if it is breakable
 		}else if( cost->breaking_rate > 0 && ( rnd() % 10000 ) < cost->breaking_rate ){
 			clif_refine( *sd, index, ITEMREFINING_FAILURE );
@@ -22779,6 +22903,21 @@ void clif_parse_refineui_refine( int32 fd, map_session_data* sd ){
 		// Downgrade the item if necessary
 		}else if( cost->downgrade_amount > 0 ){
 			item->refine = cap_value( item->refine - cost->downgrade_amount, 0, MAX_REFINE );
+
+			//[puppy] RefineUI Options
+			std::shared_ptr<s_refineopt> RefineRandomOpt = refine_randomopt_db.find(item->refine);
+			if (RefineRandomOpt != nullptr) {
+				for (const auto& group : RefineRandomOpt->groups) {
+					if (util::vector_exists(group->items, item->nameid)) {
+						group->option_group->apply_refine(sd, *item, false);
+						clif_delitem(*sd, index, 1, 3);
+						clif_additem(sd, index, 1, 0);
+						break;
+					}
+				}
+			}
+			//[puppy] RefineUI Options
+
 			clif_refine( *sd, index, ITEMREFINING_DOWNGRADE );
 			clif_refineui_info(sd, index);
 		// Only show failure, but dont do anything
