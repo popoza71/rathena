@@ -859,6 +859,7 @@
 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
 
 	export_constant2("bBarterCraftBonus", SP_BARTER_CRAFT);
+	export_constant2("bRefineSuccessAddRate", SP_REFINE_SUCCESS_ADD_RATE); //puppy refineaddrate
 
 	export_constant2("bMagicHPDrainValue", SP_CHP_MAGIC_DRAIN);
 	export_constant2("bMagicHPDrainValueRace", SP_CHP_MAGIC_DRAIN_RACE);

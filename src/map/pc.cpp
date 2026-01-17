@@ -4463,6 +4463,14 @@ void pc_bonus(map_session_data *sd,int32 type,int32 val)
 		case SP_BARTER_CRAFT:
 			sd->bonus.barter_craft_bonus += val;
 			break;
+		//puppy refineaddrate
+		case SP_REFINE_SUCCESS_ADD_RATE:
+			//bonus bRefineSuccessAddRate,10;	//Add 10% to refine success rate
+			if(sd->state.lr_flag !=2)
+				sd->bonus.refine_success_add_rate += (val*100);
+			break;
+		//puppy refineaddrate
+
 		case SP_CHP_MAGIC_DRAIN: // bonus bHPDrainValue,n;
 			if(!sd->state.lr_flag) {
 				sd->right_weapon.magic_hp_drain_class[CLASS_NORMAL] += val;

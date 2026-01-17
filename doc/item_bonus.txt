@@ -511,3 +511,17 @@ bonus bClassChange,n;     		Gives a n/100% chance to change the attacked monster
 bonus bAddStealRate,n;    		Increases success rate of Steal skill by n/100%
 bonus bNoMadoFuel;			Nullify Magic Gear Fuel requirement for skills.
 bonus bNoWalkDelay;				Give infinite Endure.
+
+
+//custom 
+bonus bMagicHPDrainValue,n;        		ดูดเลือด n เมื่อใช้สกิลเวทย์
+bonus2 bMagicHPDrainValueRace,r,n; 		ดูดเลือด n เมื่อใช้สกิลเวทย์ กับเป้าหมายเผ่า r
+bonus2 bMagicHPDrainValueClass,c,n;		ดูดเลือด n เมื่อใช้สกิลเวทย์ กับเป้าหมาย class c
+bonus2 bMagicHPDrainRate,x,n;			มีโอกาส x/10 ดูดเลือด n% (จากดาเมจที่ทำ) เมื่อใช้สกิลเวทย์
+
+bonus bMagicSPDrainValue,n;        		ดูดเลือด n เมื่อใช้สกิลเวทย์
+bonus2 bMagicSPDrainValueRace,r,n; 		ดูดเลือด n เมื่อใช้สกิลเวทย์ กับเป้าหมายเผ่า r
+bonus2 bMagicSPDrainValueClass,c,n;		ดูดเลือด n เมื่อใช้สกิลเวทย์ กับเป้าหมาย class c
+bonus2 bMagicSPDrainRate,x,n;			มีโอกาส x/10 ดูดเลือด n% (จากดาเมจที่ทำ) เมื่อใช้สกิลเวทย์
+
+bonus bRefineSuccessAddRate,n;			add Success rate form refine ui n%

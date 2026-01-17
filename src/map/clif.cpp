@@ -22589,7 +22589,9 @@ void clif_refineui_info( map_session_data* sd, uint16 index ){
 			PACKET_ZC_REFINING_MATERIAL_LIST_SUB& entry = p->req[count];
 
 			entry.itemId = client_nameid( cost->nameid );
-			entry.chance = static_cast<decltype(entry.chance)>( cost->chance / 100 );
+			//entry.chance = static_cast<decltype(entry.chance)>( cost->chance / 100 ); //original refine
+			entry.chance = static_cast<decltype(entry.chance)>( cap_value(cost->chance + sd->bonus.refine_success_add_rate, 0, 10000) / 100	); //puppy refineaddrate
+			p->req[count].zeny = cost->zeny;
 			entry.zeny = cost->zeny;
 
 			p->packetLength += static_cast<decltype(p->packetLength)>( sizeof( entry ) );
@@ -22745,7 +22747,8 @@ void clif_parse_refineui_refine( int32 fd, map_session_data* sd ){
 	}
 
 	// Try to refine the item
-	if( cost->chance >= ( rnd() % 10000 ) ){
+	//if( cost->chance >= ( rnd() % 10000 ) ){  //original refine
+	if ((cap_value(cost->chance + sd->bonus.refine_success_add_rate, 0, 10000)) >= (rnd() % 10000)) { //puppy refineaddrate
 		log_pick_pc( sd, LOG_TYPE_OTHER, -1, item );
 		// Success
 		item->refine = cap_value( item->refine + 1, 0, MAX_REFINE );

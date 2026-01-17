@@ -690,6 +690,7 @@ public:
 		int16 weapon_atk_rate, weapon_matk_rate;
 		int32 skill_ratio;
 		int32 barter_craft_bonus;
+		int32 refine_success_add_rate; //puppy refineaddrate
 	} bonus;
 	// zeroed vars end here.
 
