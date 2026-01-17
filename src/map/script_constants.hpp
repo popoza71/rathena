@@ -3489,6 +3489,8 @@
 	export_constant(EFST_C_BUFF_9);
 	export_constant(EFST_BLOCK);
 
+	/* vip state */
+	export_constant(EFST_VIPSTATE);
 	//custombuff
 	export_constant(EFST_CUSTOM_BUFF_1);
 	export_constant(EFST_CUSTOM_BUFF_2);
@@ -11118,6 +11120,9 @@
 	export_constant(GUILDINFO_NEXTEXP);
 	export_constant(GUILDINFO_MASTERID);
 	export_constant(GUILDINFO_MASTERNAME);
+
+	/* vip state */
+	export_constant(SC_VIPSTATE);
 
 	export_constant(SC_CUSTOM_BUFF_1);
 	export_constant(SC_CUSTOM_BUFF_2);

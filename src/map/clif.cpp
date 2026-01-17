@@ -10973,6 +10973,17 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
 
 		if (!sd->state.autotrade) { // Don't trigger NPC event or opening vending/buyingstore will be failed
 			npc_script_event( *sd, NPCE_LOGIN );
+
+// VIP status
+#ifdef VIP_ENABLE
+			// force VIP reset on login
+			status_change_end(sd, SC_VIPSTATE, INVALID_TIMER);
+			if(sd->vip.time > 0)
+				sc_start(NULL, sd, SC_VIPSTATE, 100, 1, (sd->vip.time-time(NULL)) * 1000);
+#endif
+// VIP status
+
+
 		}
 
 		// Set facing direction before check below to update client

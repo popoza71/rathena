@@ -1448,6 +1448,8 @@ enum sc_type : int16 {
 	SC_WIND_CHARM_POWER,
 	SC_GROUND_CHARM_POWER,
 
+	/* VIP State */
+	SC_VIPSTATE,
 
 	//custom bonus buff
 	SC_BARTER_CRAFT_BONUS = 1805,
@@ -3003,6 +3005,10 @@ enum efst_type : int16{
 	EFST_OVERCOMING_CRISIS,	//1671
 
 	EFST_BLOCK = 1688,
+
+
+	/* vip state */
+	EFST_VIPSTATE = 2002,
 
 
 	//custom buff status effects
