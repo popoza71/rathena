@@ -11,6 +11,8 @@
  * Format:
  *	 <datatype> name;
  **/
+ 	int check_stat_bypass;
+
 	//[puppy] RefineUI Options
 	int refine_announce_success;
 	int refine_announce_broken;

@@ -10,6 +10,8 @@
  * Format:
  *	 { "name", &battle_config.<variable name>, <default value>, <minimum value>, <maximum value> },
  **/
+	{ "check_stat_bypass",					&battle_config.check_stat_bypass,				0,		0,		1				},
+
 	//[puppy] RefineUI Options
 	{ "refine_announce_success",      		&battle_config.refine_announce_success,   		0,      0,      MAX_REFINE,		},
 	{ "refine_announce_broken",      		&battle_config.refine_announce_broken,   		0,      0,      MAX_REFINE,		},

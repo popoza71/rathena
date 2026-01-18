@@ -460,6 +460,7 @@ public:
 		// Bitmask of e_pcblock_action_flag values
 		uint16 block_action;
 		bool refineui_open;
+		bool check_equip_skill;
 		t_itemid inventory_expansion_confirmation;
 		uint16 inventory_expansion_amount;
 		t_itemid laphine_synthesis;
@@ -940,6 +941,9 @@ public:
 	e_instance_mode instance_mode; ///< Mode of instance player last leaves from (used for instance destruction button)
 
 	int16 setlook_head_top, setlook_head_mid, setlook_head_bottom, setlook_robe; ///< Stores 'setlook' script command values.
+
+	uint32 ce_gid = 0;
+
 
 	struct{
 		int32 tid;

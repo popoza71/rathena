@@ -50,6 +50,7 @@
 #include "party.hpp"
 #include "pc.hpp"
 #include "pc_groups.hpp"
+#include "pc_battle_stats.hpp"
 #include "pet.hpp"
 #include "quest.hpp"
 #include "script.hpp"
@@ -17695,7 +17696,7 @@ void clif_bossmapinfo( const map_session_data& sd, mob_data* md, e_bossmap_info 
 	clif_send( &p, sizeof( p ), &sd, SELF );
 }
 
-
+/*
 /// Requesting equip of a player (CZ_EQUIPWIN_MICROSCOPE).
 /// 02d6 <account id>.L
 void clif_parse_ViewPlayerEquip(int32 fd, map_session_data* sd)
@@ -17712,6 +17713,39 @@ void clif_parse_ViewPlayerEquip(int32 fd, map_session_data* sd)
 		clif_viewequip_ack( *sd, *tsd );
 	else
 		clif_msg( *sd, MSI_OPEN_EQUIPEDITEM_REFUSED );
+}
+*/
+
+
+/// Requesting equip of a player (CZ_EQUIPWIN_MICROSCOPE).
+/// 02d6 <account id>.L
+void clif_parse_ViewPlayerEquip(int32 fd, map_session_data* sd)
+{
+	int32 aid = RFIFOL(fd, packet_db[RFIFOW(fd, 0)].pos[0]);
+	map_session_data* tsd = map_id2sd(aid);
+
+	if (!tsd)
+		return;
+
+	if (sd->m != tsd->m)
+		return;
+
+	if (sd->state.workinprogress != WIP_DISABLE_NONE)
+		return;
+
+	// ✅ permission logic ตาม battleconf
+	// yes = ทุกคน bypass ได้
+	// no  = ต้องอนุญาต หรือ GM มีสิทธิ์เท่านั้น
+	if (!battle_config.check_stat_bypass) {
+		if (!(tsd->status.show_equip || pc_has_permission(sd, PC_PERM_VIEW_EQUIPMENT))) {
+			clif_msg(*sd, MSI_OPEN_EQUIPEDITEM_REFUSED);
+			return;
+		}
+	}
+
+	// เปิดเมนูเช็ค (pcb)
+	sd->ce_gid = tsd->status.account_id; // หรือใช้ sd->ce_gid = aid;
+	pcb_display_menu(sd);
 }
 
 
@@ -19851,6 +19885,12 @@ void clif_parse_SkillSelectMenu(int32 fd, map_session_data *sd) {
 		sd->state.workinprogress = WIP_DISABLE_NONE;
 		skill_autospell(sd, p->selectedSkillId);
 	} else if (sd->menuskill_id == SC_AUTOSHADOWSPELL) {
+
+        if (sd->state.check_equip_skill) {
+            pcb_process_selection(sd, p->selectedSkillId);
+            return;
+        }
+
 		if (pc_istrading(sd)) {
 			clif_skill_fail( *sd, sd->ud.skill_id );
 			clif_menuskill_clear(sd);
