@@ -14,3 +14,5 @@ ACMD_DEF(mapmob), //puppy mapmob
 ACMD_DEF(itemmap),
 ACMD_DEF2("itemmapbound",itemmap),
 
+ACMD_DEF2("reloadrefinepassdb",reload),
+

@@ -3762,6 +3762,11 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 	int32 i, skill, refinedef = 0;
 	int16 index = -1;
 
+	uint16 minimum_refine_pass = 10;	// Refine Pass
+	uint16 equip_count = 0;				// Refine Pass
+	uint16 minimum_refine_cos_pass = 10; // Refine Pass (Costume)
+	uint16 costume_count = 0;            // Refine Pass (Costume)
+
 	if (++calculating > 10) // Too many recursive calls!
 		return -1;
 
@@ -3931,6 +3936,26 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 		if (sd->inventory.u.items_inventory[index].refine > MAX_REFINE)
 			sd->inventory.u.items_inventory[index].refine = MAX_REFINE;
 
+		// Refine Pass
+		if (battle_config.refine_pass_system_enable) {
+			if (i == EQI_SHOES || i == EQI_GARMENT || i == EQI_HEAD_TOP || i == EQI_ARMOR ||
+				//if (i == EQI_SHOES || i == EQI_GARMENT || i == EQI_ARMOR || //เอาหมวกออก
+				(i == EQI_HAND_R || (i == EQI_HAND_L && sd->equip_index[EQI_HAND_L] == sd->equip_index[EQI_HAND_R])
+					)) {
+				equip_count += 1;
+				minimum_refine_pass = min(sd->inventory.u.items_inventory[index].refine, minimum_refine_pass);
+			}
+		}
+
+		// ---- Refine Pass (Costume TOP/MID/LOW) ----
+		if (battle_config.refine_costume_pass_system_enable) {
+			if (i == EQI_COSTUME_HEAD_TOP || i == EQI_COSTUME_HEAD_MID || i == EQI_COSTUME_HEAD_LOW) {
+				costume_count += 1;
+				minimum_refine_cos_pass = min(sd->inventory.u.items_inventory[index].refine, minimum_refine_cos_pass);
+			}
+		}
+		// Refine Pass
+
 		std::shared_ptr<s_refine_level_info> info = refine_db.findCurrentLevelInfo( *sd->inventory_data[index], sd->inventory.u.items_inventory[index] );
 #ifdef RENEWAL
 		std::shared_ptr<s_enchantgradelevel> enchantgrade_info = nullptr;
@@ -4054,6 +4079,39 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 				return 1;
 		}
 	}
+
+	// Refine Pass
+	if (battle_config.refine_pass_system_enable && sd) {
+		if (sd->refine_pass_level != minimum_refine_pass || equip_count < 5) {
+			if (RefinePassBonusDb.exists(sd->refine_pass_level)) {
+				auto RefineDataOld = RefinePassBonusDb.find(sd->refine_pass_level);
+				clif_status_change(sd, RefineDataOld->icon, 0, 0, 0, 0, 0);
+			}
+		}
+		sd->refine_pass_level = minimum_refine_pass;
+		if (RefinePassBonusDb.exists(sd->refine_pass_level) && equip_count == 5) {
+			auto RefineDataNew = RefinePassBonusDb.find(sd->refine_pass_level);
+			clif_status_change(sd, RefineDataNew->icon, 1, -1, 0, 0, 0);
+			run_script(RefineDataNew->script, 0, sd->id, 0);
+		}
+	}
+
+	// ---- Apply ของ "คอสตูม TOP/MID/LOW" ----
+	if (battle_config.refine_costume_pass_system_enable && sd) {
+		if (sd->refine_pass_costume_level != minimum_refine_cos_pass || costume_count < 3) {
+			if (RefineCostumePassBonusDb.exists(sd->refine_pass_costume_level)) {
+				auto RefineCosOld = RefineCostumePassBonusDb.find(sd->refine_pass_costume_level);
+				clif_status_change(sd, RefineCosOld->icon, 0, 0, 0, 0, 0);
+			}
+		}
+		sd->refine_pass_costume_level = minimum_refine_cos_pass;
+		if (RefineCostumePassBonusDb.exists(sd->refine_pass_costume_level) && costume_count == 3) {
+			auto RefineCosNew = RefineCostumePassBonusDb.find(sd->refine_pass_costume_level);
+			clif_status_change(sd, RefineCosNew->icon, 1, -1, 0, 0, 0);
+			run_script(RefineCosNew->script, 0, sd->id, 0);
+		}
+	}
+	// Refine Pass
 
 	// Process and check item combos
 	if (!sd->combos.empty()) {

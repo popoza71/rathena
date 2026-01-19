@@ -145,4 +145,13 @@ ACMD_FUNC(itemmap)
 }
 
 
+ACMD_FUNC(reloadrefinepassdb){
+	nullpo_retr(-1, sd);
+
+	RefinePassBonusDb.reload();
+	RefineCostumePassBonusDb.reload();
+	clif_displaymessage(fd, "Refine Pass database has been reloaded.");
+
+	return 0;
+}
 

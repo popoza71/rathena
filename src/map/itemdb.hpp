@@ -3786,6 +3786,35 @@ struct item_data* itemdb_search(t_itemid nameid);
 [[deprecated("Please upgrade your code to item_db.exists() or item_db.find()! This function will be dropped soon!")]]
 std::shared_ptr<item_data> itemdb_exists(t_itemid nameid);
 
+// Refine Pass
+struct s_refine_pass_bonus {
+	enum efst_type icon;
+	struct script_code* script;
+};
+
+class RefinePassBonusDatabase : public TypesafeCachedYamlDatabase<uint16, s_refine_pass_bonus> {
+public:
+	RefinePassBonusDatabase() : TypesafeCachedYamlDatabase("REFINE_PASS_BONUS_DB", 1) {
+
+	}
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() {}
+};
+extern RefinePassBonusDatabase RefinePassBonusDb;
+void refinepassdb_reload(void);
+
+// ---- Costume Refine Pass ----
+class RefineCostumePassBonusDatabase : public TypesafeCachedYamlDatabase<uint16, s_refine_pass_bonus> {
+public:
+	RefineCostumePassBonusDatabase() : TypesafeCachedYamlDatabase("REFINE_COSTUME_PASS_BONUS_DB", 1) {}
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() {}
+};
+extern RefineCostumePassBonusDatabase RefineCostumePassBonusDb;
+// Refine Pass
+
 #define itemdb_name(n) itemdb_search(n)->name.c_str()
 #define itemdb_ename(n) itemdb_search(n)->ename.c_str()
 #define itemdb_type(n) itemdb_search(n)->type

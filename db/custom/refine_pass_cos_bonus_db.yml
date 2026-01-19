@@ -1,0 +1,70 @@
+Header:
+  Type: REFINE_COSTUME_PASS_BONUS_DB
+  Version: 1
+
+Body:
+  - Level: 5
+    Icon: EFST_REFINE_COS_PASS_5
+    Script: |
+      bonus2 bExpAddClass,Class_All,5;
+      bonus2 bDropAddRace,RC_All,5;
+      bonus2 bAddClass,CLASS_ALL,2;
+      bonus bMatkRate,2;
+      bonus bAspdRate,2;
+      bonus bDelayrate,-3;
+      bonus bUseSPrate,-10;
+
+  - Level: 6
+    Icon: EFST_REFINE_COS_PASS_6
+    Script: |
+      bonus2 bExpAddClass,Class_All,10;
+      bonus2 bDropAddRace,RC_All,10;
+      bonus2 bAddClass,CLASS_ALL,3;
+      bonus bMatkRate,3;
+      bonus bAspdRate,3;
+      bonus bDelayrate,-5;
+      bonus bUseSPrate,-15;
+
+  - Level: 7
+    Icon: EFST_REFINE_COS_PASS_7
+    Script: |
+      bonus2 bExpAddClass,Class_All,15;
+      bonus2 bDropAddRace,RC_All,15;
+      bonus2 bAddClass,CLASS_ALL,4;
+      bonus bMatkRate,4;
+      bonus bAspdRate,4;
+      bonus bDelayrate,-8;
+      bonus bUseSPrate,-20;
+
+  - Level: 8
+    Icon: EFST_REFINE_COS_PASS_8
+    Script: |
+      bonus2 bExpAddClass,Class_All,20;
+      bonus2 bDropAddRace,RC_All,20;
+      bonus2 bAddClass,CLASS_ALL,5;
+      bonus bMatkRate,5;
+      bonus bAspdRate,5;
+      bonus bDelayrate,-12;
+      bonus bUseSPrate,-25;
+
+  - Level: 9
+    Icon: EFST_REFINE_COS_PASS_9
+    Script: |
+      bonus2 bExpAddClass,Class_All,25;
+      bonus2 bDropAddRace,RC_All,25;
+      bonus2 bAddClass,CLASS_ALL,7;
+      bonus bMatkRate,7;
+      bonus bAspdRate,6;
+      bonus bDelayrate,-12;
+      bonus bUseSPrate,-30;
+
+  - Level: 10
+    Icon: EFST_REFINE_COS_PASS_10
+    Script: |
+      bonus2 bExpAddClass,Class_All,30;
+      bonus2 bDropAddRace,RC_All,30;
+      bonus2 bAddClass,CLASS_ALL,10;
+      bonus bMatkRate,10;
+      bonus bAspdRate,8;
+      bonus bDelayrate,-15;
+      bonus bUseSPrate,-40;

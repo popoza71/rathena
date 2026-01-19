@@ -3491,6 +3491,22 @@
 
 	/* vip state */
 	export_constant(EFST_VIPSTATE);
+
+	// Refine Pass
+	export_constant(EFST_REFINE_PASS_5);
+	export_constant(EFST_REFINE_PASS_6);
+	export_constant(EFST_REFINE_PASS_7);
+	export_constant(EFST_REFINE_PASS_8);
+	export_constant(EFST_REFINE_PASS_9);
+	export_constant(EFST_REFINE_PASS_10);
+	// Refine Costume Pass
+	export_constant(EFST_REFINE_COS_PASS_5);
+	export_constant(EFST_REFINE_COS_PASS_6);
+	export_constant(EFST_REFINE_COS_PASS_7);
+	export_constant(EFST_REFINE_COS_PASS_8);
+	export_constant(EFST_REFINE_COS_PASS_9);
+	export_constant(EFST_REFINE_COS_PASS_10);
+
 	//custombuff
 	export_constant(EFST_CUSTOM_BUFF_1);
 	export_constant(EFST_CUSTOM_BUFF_2);

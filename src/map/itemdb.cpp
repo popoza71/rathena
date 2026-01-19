@@ -33,6 +33,9 @@ using namespace rathena;
 ComboDatabase itemdb_combo;
 ItemGroupDatabase itemdb_group;
 
+RefinePassBonusDatabase RefinePassBonusDb;
+RefineCostumePassBonusDatabase RefineCostumePassBonusDb;
+
 struct s_roulette_db rd;
 
 static void itemdb_jobid2mapid(uint64 bclass[3], e_mapid jobmask, bool active);
@@ -5175,6 +5178,10 @@ static void itemdb_read(void) {
 
 	if (battle_config.feature_roulette)
 		itemdb_parse_roulette_db();
+	if (battle_config.refine_pass_system_enable)
+		RefinePassBonusDb.load();
+	if (battle_config.refine_costume_pass_system_enable)
+		RefineCostumePassBonusDb.load();
 }
 
 /*==========================================
@@ -5269,6 +5276,11 @@ void do_final_itemdb(void) {
 	refine_randomopt_db.clear(); //[puppy] RefineUI Options
 	if (battle_config.feature_roulette)
 		itemdb_roulette_free();
+	if (battle_config.refine_pass_system_enable)
+		RefinePassBonusDb.clear();
+	if (battle_config.refine_costume_pass_system_enable)
+		RefineCostumePassBonusDb.clear();
+
 }
 
 /**
@@ -5276,4 +5288,118 @@ void do_final_itemdb(void) {
 */
 void do_init_itemdb(void) {
 	itemdb_read();
+}
+
+
+// Refine Pass
+const std::string RefinePassBonusDatabase::getDefaultLocation() {
+	return std::string(db_path) + "/custom/refine_pass_bonus_db.yml";
+}
+
+uint64 RefinePassBonusDatabase::parseBodyNode(const ryml::NodeRef& node) {
+	uint16 level;
+
+	if (!this->asUInt16(node, "Level", level))
+		return 0;
+
+	std::shared_ptr<s_refine_pass_bonus> refinepassbonus = this->find(level);
+	bool exists = refinepassbonus != nullptr;
+
+	if (!exists) {
+		if (!this->nodesExist(node, { "Level" }))
+			return 0;
+		refinepassbonus = std::make_shared<s_refine_pass_bonus>();
+	}
+
+	if (this->nodeExists(node, "Icon")) {
+		std::string icon_name;
+
+		if (!this->asString(node, "Icon", icon_name))
+			return 0;
+
+		int64 constant;
+
+		if (!script_get_constant(icon_name.c_str(), &constant)) {
+			this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		if (constant < EFST_BLANK || constant >= EFST_MAX) {
+			this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		refinepassbonus->icon = static_cast<efst_type>(constant);
+	}
+	else {
+		if (!exists)
+			refinepassbonus->icon = EFST_BLANK;
+	}
+
+	if (this->nodeExists(node, "Script")) {
+		std::string script;
+
+		if (!this->asString(node, "Script", script))
+			return 0;
+
+		if (refinepassbonus->script) {
+			aFree(refinepassbonus->script);
+			refinepassbonus->script = nullptr;
+		}
+
+		refinepassbonus->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+	}
+
+	if (!exists)
+		this->put(level, refinepassbonus);
+
+	return 1;
+}
+
+// ---- Refine Costume Pass ----
+const std::string RefineCostumePassBonusDatabase::getDefaultLocation() {
+	return std::string(db_path) + "/custom/refine_pass_cos_bonus_db.yml";
+}
+
+uint64 RefineCostumePassBonusDatabase::parseBodyNode(const ryml::NodeRef& node) {
+	uint16 level;
+	if (!this->asUInt16(node, "Level", level))
+		return 0;
+
+	std::shared_ptr<s_refine_pass_bonus> entry = this->find(level);
+	bool exists = entry != nullptr;
+
+	if (!exists) {
+		if (!this->nodesExist(node, { "Level" }))
+			return 0;
+		entry = std::make_shared<s_refine_pass_bonus>();
+	}
+
+	// Icon
+	if (this->nodeExists(node, "Icon")) {
+		std::string icon_name;
+		if (!this->asString(node, "Icon", icon_name))
+			return 0;
+		int64 constant;
+		if (!script_get_constant(icon_name.c_str(), &constant) || constant < EFST_BLANK || constant >= EFST_MAX) {
+			this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+		entry->icon = static_cast<efst_type>(constant);
+	}
+	else if (!exists) {
+		entry->icon = EFST_BLANK;
+	}
+
+	// Script
+	if (this->nodeExists(node, "Script")) {
+		std::string sc;
+		if (!this->asString(node, "Script", sc))
+			return 0;
+		if (entry->script) { aFree(entry->script); entry->script = nullptr; }
+		entry->script = parse_script(sc.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+	}
+
+	if (!exists) this->put(level, entry);
+	return 1;
 }

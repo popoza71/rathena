@@ -961,6 +961,10 @@ public:
 
 	std::vector<uint32> party_booking_requests;
 
+	// Refine Pass
+	uint16 refine_pass_level;
+	uint16 refine_pass_costume_level;
+
 	void update_look( _look look );
 };
 

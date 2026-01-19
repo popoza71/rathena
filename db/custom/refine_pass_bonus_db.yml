@@ -1,0 +1,67 @@
+Header:
+  Type: REFINE_PASS_BONUS_DB
+  Version: 1
+
+Body:
+  - Level: 5
+    Icon: EFST_REFINE_PASS_5
+    Script: |
+      bonus2 bExpAddClass,Class_All,5;
+      bonus2 bDropAddRace,RC_All,5;
+      bonus bBaseAtk,5;
+      bonus bMatk,5;
+      bonus bAddMaxWeight,2000;
+      bonus bSPrecovRate,5;
+
+  - Level: 6
+    Icon: EFST_REFINE_PASS_6
+    Script: |
+      bonus2 bExpAddClass,Class_All,10;
+      bonus2 bDropAddRace,RC_All,10;
+      bonus2 bAddClass,CLASS_ALL,1;
+      bonus bMatkRate,1;
+      bonus bAddMaxWeight,3000;
+      bonus bSPrecovRate,10;
+
+  - Level: 7
+    Icon: EFST_REFINE_PASS_7
+    Script: |
+      bonus2 bExpAddClass,Class_All,15;
+      bonus2 bDropAddRace,RC_All,15;
+      bonus2 bAddClass,CLASS_ALL,2;
+      bonus bMatkRate,2;
+      bonus bAddMaxWeight,5000;
+      bonus bSPrecovRate,20;
+
+  - Level: 8
+    Icon: EFST_REFINE_PASS_8
+    Script: |
+      bonus2 bExpAddClass,Class_All,20;
+      bonus2 bDropAddRace,RC_All,20;
+      bonus2 bAddClass,CLASS_ALL,3;
+      bonus bMatkRate,3;
+      bonus bAddMaxWeight,7000;
+      bonus bSPrecovRate,30;
+      bonus bAllStats,1;
+
+  - Level: 9
+    Icon: EFST_REFINE_PASS_9
+    Script: |
+      bonus2 bExpAddClass,Class_All,25;
+      bonus2 bDropAddRace,RC_All,25;
+      bonus2 bAddClass,CLASS_ALL,4;
+      bonus bMatkRate,4;
+      bonus bAddMaxWeight,10000;
+      bonus bSPrecovRate,40;
+      bonus bAllStats,1;
+
+  - Level: 10
+    Icon: EFST_REFINE_PASS_10
+    Script: |
+      bonus2 bExpAddClass,Class_All,40;
+      bonus2 bDropAddRace,RC_All,40;
+      bonus2 bAddClass,CLASS_ALL,5;
+      bonus bMatkRate,5;
+      bonus bAddMaxWeight,15000;
+      bonus bSPrecovRate,50;
+      bonus bAllStats,2;

@@ -33,6 +33,8 @@
 	{ "refine_normal_color",				&battle_config.refine_normal_color, 	 0xff0000,      0,      INT_MAX,		},
 	{ "blacksmith_downgrade",				&battle_config.blacksmith_downgrade,			0,		0,		1,				},
 
+	{ "refine_pass_system_enable",			&battle_config.refine_pass_system_enable,		0,	0,	1,			},
+	{ "refine_costume_pass_system_enable",	&battle_config.refine_costume_pass_system_enable, 0, 0, 1, },
 
 	{ "trickdead_noexp",						&battle_config.trickdead_noexp,					1,      0,      1, },
 

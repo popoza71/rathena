@@ -34,6 +34,9 @@
 	int refine_normal_color;
 	int blacksmith_downgrade;
 
+	int refine_pass_system_enable;
+	int refine_costume_pass_system_enable;
+
 	int32 trickdead_noexp;
 
 	/*
