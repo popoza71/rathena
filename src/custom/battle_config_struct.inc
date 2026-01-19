@@ -13,6 +13,17 @@
  **/
  	int check_stat_bypass;
 
+	// MvP and Mini-Boss Card Ad and Log System [Bad]
+	int announcement_and_log_system;
+	int mvp_card_announce_system;
+	int mvp_card_announce;
+	int dropped_mvp_card_log;
+	int set_drop_announce_color;
+	int mini_boss_card_announce_system;
+	int mini_boss_card_announce;
+	int dropped_mini_boss_card_log;
+	int set_drop_card_announce_color;
+
 	//[puppy] RefineUI Options
 	int refine_announce_success;
 	int refine_announce_broken;

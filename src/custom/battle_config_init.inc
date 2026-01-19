@@ -12,6 +12,17 @@
  **/
 	{ "check_stat_bypass",					&battle_config.check_stat_bypass,				0,		0,		1				},
 
+	// MvP and Mini-Boss Card Ad and Log System [Bad]
+	{ "announcement_and_log_system",        &battle_config.announcement_and_log_system,     1,      0,      1,              },
+	{ "mvp_card_announce_system",           &battle_config.mvp_card_announce_system,        1,      0,      1,              },
+	{ "mvp_card_announce",                  &battle_config.mvp_card_announce,               1,      0,      1,              },
+	{ "dropped_mvp_card_log",               &battle_config.dropped_mvp_card_log,            1,      0,      1,              },
+	{ "set_drop_announce_color",            &battle_config.set_drop_announce_color,         0xFFBB00,      0,INT_MAX,       },
+	{ "mini_boss_card_announce_system",     &battle_config.mini_boss_card_announce_system,  1,      0,      1,              },
+	{ "mini_boss_card_announce",            &battle_config.mini_boss_card_announce,         1,      0,      1,              },
+	{ "dropped_mini_boss_card_log",         &battle_config.dropped_mini_boss_card_log,      1,      0,      1,              },
+	{ "set_drop_card_announce_color",       &battle_config.set_drop_card_announce_color,    0xFFBB00,      0,INT_MAX,       },
+
 	//[puppy] RefineUI Options
 	{ "refine_announce_success",      		&battle_config.refine_announce_success,   		0,      0,      MAX_REFINE,		},
 	{ "refine_announce_broken",      		&battle_config.refine_announce_broken,   		0,      0,      MAX_REFINE,		},
