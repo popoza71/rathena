@@ -11664,9 +11664,31 @@ void clif_parse_Emotion(int32 fd, map_session_data *sd){
 			return;
 		}
 
-		if(battle_config.client_reshuffle_dice && emoticon>=ET_DICE1 && emoticon<=ET_DICE6) {// re-roll dice
-			emoticon = static_cast<emotion_type>( rnd()%6+ET_DICE1 );
+		//if(battle_config.client_reshuffle_dice && emoticon>=ET_DICE1 && emoticon<=ET_DICE6) {// re-roll dice
+		//	emoticon = static_cast<emotion_type>( rnd()%6+ET_DICE1 );
+		//}
+
+		// New feature: re-roll dice if enabled
+		if (battle_config.client_reshuffle_dice && emoticon >= ET_DICE1 && emoticon <= ET_DICE6) {// re-roll dice
+			emoticon = static_cast<emotion_type>(rnd() % 6 + ET_DICE1);
+			{
+				if (sd->special_state.allow_dice) {
+					int dice = emoticon - ET_DICE1 + 1;
+
+					char msg[100];
+					snprintf(msg, sizeof(msg),
+						"[ %s ] : rolled %d",
+						sd->status.name, dice
+					);
+					clif_displaymessage(sd->fd, msg);
+				}
+				else {
+					emoticon = ET_SURPRISE;
+					clif_displaymessage(fd, msg_txt(sd, 2122)); // Can't roll dice Because you do not have permission to use this section yet.
+				}
+			}
 		}
+		// end new feature
 
 		clif_emotion( *sd, emoticon );
 	} else

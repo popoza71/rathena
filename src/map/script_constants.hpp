@@ -871,6 +871,7 @@
 	export_constant2("bMagicSPDrainValueClass", SC_CSP_MAGIC_DRAIN_CLASS);
 	export_constant2("bMagicSPDrainRate", SC_CSP_MAGIC_DRAINP_RATE);
 
+	export_constant2("bAllowDice", SP_ALLOW_DICE);
 
 	/* equip indices */
 	export_constant(EQI_COMPOUND_ON);

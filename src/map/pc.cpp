@@ -4471,6 +4471,11 @@ void pc_bonus(map_session_data *sd,int32 type,int32 val)
 			break;
 		//puppy refineaddrate
 
+		case SP_ALLOW_DICE:
+			if (sd->state.lr_flag != 2)
+				sd->special_state.allow_dice = 1;
+			break;
+
 		case SP_CHP_MAGIC_DRAIN: // bonus bHPDrainValue,n;
 			if(!sd->state.lr_flag) {
 				sd->right_weapon.magic_hp_drain_class[CLASS_NORMAL] += val;
@@ -10424,6 +10429,9 @@ int64 pc_readparam( const map_session_data* sd, int64 type )
 		case SP_NO_GEMSTONE:     val = sd->special_state.no_gemstone?1:0; break;
 		case SP_INTRAVISION:     val = sd->special_state.intravision?1:0; break;
 		case SP_NO_KNOCKBACK:    val = sd->special_state.no_knockback?1:0; break;
+
+		case SP_ALLOW_DICE:     val = sd->special_state.allow_dice ? 1 : 0; break;
+
 		case SP_NO_MADO_FUEL:    val = sd->special_state.no_mado_fuel?1:0; break;
 		case SP_NO_WALK_DELAY:   val = sd->special_state.no_walk_delay?1:0; break;
 		case SP_SPLASH_RANGE:    val = sd->bonus.splash_range; break;
