@@ -1454,6 +1454,16 @@ enum sc_type : int16 {
 	//custom bonus buff
 	SC_BARTER_CRAFT_BONUS = 1805,
 
+	//gum spilt
+	SC_GUM_ETC = 2001,
+	SC_GUM_EQUIP = 2002,
+	SC_GUM_CARD = 2003,
+
+	//gum spilt2
+	SC_GUM_ETC2 = 2004,
+	SC_GUM_EQUIP2 = 2005,
+	SC_GUM_CARD2 = 2006,
+
 	//custom buff
 	SC_CUSTOM_BUFF_1 = 2011,
 	SC_CUSTOM_BUFF_2 = 2012,
@@ -1506,7 +1516,6 @@ enum sc_type : int16 {
 	SC_GUILD_BUFF_3_3,
 	SC_GUILD_BUFF_3_4,
 	SC_GUILD_BUFF_3_5,
-
 
 	SC_MAX, //Automatically updated max, used in for's to check we are within bounds.
 };
@@ -3021,6 +3030,16 @@ enum efst_type : int16{
 
 	//custom buff status effects
 	EFST_BARTER_CRAFT_BONUS = 2215,
+
+	//gum spilt
+	EFST_GUM_ETC = 2221,
+	EFST_GUM_EQUIP = 2222,
+	EFST_GUM_CARD = 2223,
+
+	//gum spilt2
+	EFST_GUM_ETC2 = 2224,
+	EFST_GUM_EQUIP2 = 2225,
+	EFST_GUM_CARD2 = 2226,
 
 	EFST_CUSTOM_BUFF_1 = 2301,
 	EFST_CUSTOM_BUFF_2,

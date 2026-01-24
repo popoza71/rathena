@@ -615,6 +615,11 @@ public:
 		int32 magic_subdefele[ELE_MAX];
 		int32 ignore_res_by_race[RC_MAX];
 		int32 ignore_mres_by_race[RC_MAX];
+
+		int32 drop_card_addrace[RC_MAX]; //puppy dropaddrace
+		int32 drop_equip_addrace[RC_MAX]; //puppy dropaddrace
+		int32 drop_etc_addrace[RC_MAX]; //puppy dropaddrace
+
 	} indexed_bonus;
 	// zeroed arrays end here.
 

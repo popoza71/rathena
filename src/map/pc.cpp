@@ -5093,6 +5093,23 @@ void pc_bonus2(map_session_data *sd,int32 type,int32 type2,int32 val)
 		if (sd->state.lr_flag != LR_FLAG_ARROW)
 			sd->indexed_bonus.dropaddrace[type2] += val;
 		break;
+		//puppy dropaddrace
+	case SP_DROP_CARD_ADDRACE: // bonus2 bDropCardAddRace,r,x;
+		PC_BONUS_CHK_RACE(type2, SP_DROP_CARD_ADDRACE);
+		if (sd->state.lr_flag != 2)
+			sd->indexed_bonus.drop_card_addrace[type2] += val;
+		break;
+	case SP_DROP_EQUIP_ADDRACE: // bonus2 bDropEquipAddRace,r,x;
+		PC_BONUS_CHK_RACE(type2, SP_DROP_EQUIP_ADDRACE);
+		if (sd->state.lr_flag != 2)
+			sd->indexed_bonus.drop_equip_addrace[type2] += val;
+		break;
+	case SP_DROP_ETC_ADDRACE: // bonus2 bDropEtcAddRace,r,x;
+		PC_BONUS_CHK_RACE(type2, SP_DROP_ETC_ADDRACE);
+		if (sd->state.lr_flag != 2)
+			sd->indexed_bonus.drop_etc_addrace[type2] += val;
+		break;
+		//puppy dropaddrace
 	case SP_DROP_ADDCLASS: // bonus2 bDropAddClass,c,x;
 		PC_BONUS_CHK_CLASS(type2, SP_DROP_ADDCLASS);
 		if (sd->state.lr_flag != LR_FLAG_ARROW)

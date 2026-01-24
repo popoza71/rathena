@@ -572,7 +572,20 @@ void mob_add_spawn(uint16 mob_id, const struct spawn_info& new_spawn);
 const std::vector<spawn_info> mob_get_spawns(uint16 mob_id);
 bool mob_has_spawn(uint16 mob_id);
 
-int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md = nullptr, int32 factor = 1);
+//int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md = nullptr, int32 factor = 1);
+int32 mob_getdroprate(block_list* src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md = nullptr, t_itemid nameid = 0, int32 factor = 1);
+
+// puppy @mi
+struct DropRateResult {
+	int32 normal_drop_rate = 0;   // rate ก่อน % bonus (แต่หลัง size/luk ถ้าใช้)
+	int32 vip_bonus_rate = 0;   // ส่วนเพิ่มจาก VIP อย่างเดียว
+	int32 bonus_drop_rate = 0;   // ส่วนเพิ่มจากโบนัสอื่น ๆ (รวม SC/GUM/bonus class/race/itemboost ฯลฯ)
+	int32 total_drop_rate = 0;   // รวมทั้งหมด
+};
+
+// แนะนำให้ใส่ factor ด้วย ถ้าระบบคุณใช้ 10
+DropRateResult mob_getdroprate_extended(block_list* src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md = nullptr, t_itemid nameid = 0, int32 factor = 1);
+// puppy @mi
 
 // MvP Tomb System
 int32 mvptomb_setdelayspawn(npc_data *nd);

@@ -858,6 +858,10 @@
 	export_constant2("bWeaponSubSize", SP_WEAPON_SUBSIZE);
 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
 
+	export_constant2("bDropCardAddRace", SP_DROP_CARD_ADDRACE); //puppy dropaddrace
+	export_constant2("bDropEquipAddRace", SP_DROP_EQUIP_ADDRACE); //puppy dropaddrace
+	export_constant2("bDropEtcAddRace", SP_DROP_ETC_ADDRACE); //puppy dropaddrace
+
 	export_constant2("bBarterCraftBonus", SP_BARTER_CRAFT);
 	export_constant2("bRefineSuccessAddRate", SP_REFINE_SUCCESS_ADD_RATE); //puppy refineaddrate
 
@@ -11140,6 +11144,22 @@
 
 	/* vip state */
 	export_constant(SC_VIPSTATE);
+
+	export_constant(SC_GUM_ETC);
+	export_constant(SC_GUM_EQUIP);
+	export_constant(SC_GUM_CARD);
+
+	export_constant(SC_GUM_ETC2);
+	export_constant(SC_GUM_EQUIP2);
+	export_constant(SC_GUM_CARD2);
+
+	export_constant(EFST_GUM_ETC);
+	export_constant(EFST_GUM_EQUIP);
+	export_constant(EFST_GUM_CARD);
+
+	export_constant(EFST_GUM_ETC2);
+	export_constant(EFST_GUM_EQUIP2);
+	export_constant(EFST_GUM_CARD2);
 
 	export_constant(SC_CUSTOM_BUFF_1);
 	export_constant(SC_CUSTOM_BUFF_2);

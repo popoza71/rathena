@@ -8160,11 +8160,22 @@ ACMD_FUNC(mobinfo)
 				if (id == nullptr)
 					continue;
 
-				int32 droprate = mob_getdroprate( sd, mob, entry->rate, drop_modifier );
+				//int32 droprate = mob_getdroprate( sd, mob, entry->rate, drop_modifier );
+				//int32 droprate = mob_getdroprate(sd, mob, entry->rate, drop_modifier, nullptr, entry->nameid); // split gum
 
-				sprintf(atcmd_output2, " - %s  %02.02f%%", item_db.create_item_link( id ).c_str(), (float)droprate / 100);
+				//puppy @mi
+				DropRateResult droprate = mob_getdroprate_extended(sd, mob, entry->rate, drop_modifier, nullptr, entry->nameid);
+				sprintf(atcmd_output2, " - %s  (%02.02f%%) + (%02.02f%%) = %02.02f%%",
+					item_db.create_item_link(id).c_str(),
+					(float)droprate.normal_drop_rate / 100,
+					(float)(droprate.bonus_drop_rate) / 100, // รวมค่าโบนัสทั้งหมด รวมทั้ง VIP
+					(float)droprate.total_drop_rate / 100);
+				//puppy @mi
+
+				//sprintf(atcmd_output2, " - %s  %02.02f%%", item_db.create_item_link( id ).c_str(), (float)droprate / 100);
 				strcat(atcmd_output, atcmd_output2);
-				if (++j % 3 == 0) {
+				//if (++j % 3 == 0) {
+				if (++j % 1 == 0) {
 					clif_displaymessage(fd, atcmd_output);
 					strcpy(atcmd_output, " ");
 				}

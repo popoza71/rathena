@@ -525,3 +525,7 @@ bonus2 bMagicSPDrainValueClass,c,n;		ดูดเลือด n เมื่อใช้สกิลเวทย์ กับเป้าหมาย cl
 bonus2 bMagicSPDrainRate,x,n;			มีโอกาส x/10 ดูดเลือด n% (จากดาเมจที่ทำ) เมื่อใช้สกิลเวทย์
 
 bonus bRefineSuccessAddRate,n;			add Success rate form refine ui n%
+
+bonus2 bDropCardAddRace,r,x;
+bonus2 bDropEquipAddRace,r,x;
+bonus2 bDropEtcAddRace,r,x;

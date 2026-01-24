@@ -2815,7 +2815,8 @@ void mob_damage(mob_data *md, block_list *src, int32 damage)
  * @param factor: factor which is applied to all multiplicative bonuses and upper bound caps
  * @return Modified drop rate
  */
-int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md, int32 factor)
+//int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md, int32 factor)
+int32 mob_getdroprate(block_list* src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md, t_itemid nameid, int32 factor)
 {
 	int32 drop_rate = base_rate;
 
@@ -2826,6 +2827,12 @@ int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base
 		else if (mob_size == SZ_BIG)
 			drop_rate *= 2;
 	}
+
+	std::shared_ptr<item_data> id = nullptr;
+	if( nameid != 0 ){
+		id = item_db.find( nameid );
+	}
+
 
 	if (src) {
 		if (battle_config.drops_by_luk) // Drops affected by luk as a fixed increase [Valaris]
@@ -2846,10 +2853,53 @@ int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base
 			drop_rate_bonus += sd->indexed_bonus.dropaddclass[mob->status.class_] + sd->indexed_bonus.dropaddclass[CLASS_ALL];
 			drop_rate_bonus += sd->indexed_bonus.dropaddrace[mob->status.race] + sd->indexed_bonus.dropaddrace[RC_ALL];
 
-			if (sd->sc.getSCE(SC_ITEMBOOST))
-				drop_rate_bonus += sd->sc.getSCE(SC_ITEMBOOST)->val1;
-			if (sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND))
-				drop_rate_bonus += sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND)->val1;
+			//puppy dropaddrace
+			if (id->type == IT_CARD) {
+				drop_rate_bonus += sd->indexed_bonus.drop_card_addrace[mob->status.race];
+				drop_rate_bonus += sd->indexed_bonus.drop_card_addrace[RC_ALL];
+			}
+			if (id->type == IT_ARMOR || id->type == IT_WEAPON) {
+				drop_rate_bonus += sd->indexed_bonus.drop_equip_addrace[mob->status.race];
+				drop_rate_bonus += sd->indexed_bonus.drop_equip_addrace[RC_ALL];
+			}
+			if (id->type == IT_ETC) {
+				drop_rate_bonus += sd->indexed_bonus.drop_etc_addrace[mob->status.race];
+				drop_rate_bonus += sd->indexed_bonus.drop_etc_addrace[RC_ALL];
+			}
+			//puppy dropaddrace
+
+			if (id && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				if (sd->sc.getSCE(SC_ITEMBOOST))
+					drop_rate_bonus += sd->sc.getSCE(SC_ITEMBOOST)->val1;
+				if (sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND))
+					drop_rate_bonus += sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND)->val1;
+			}
+
+			// gum split (only if item exists)
+			if (id && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				// Gum split: apply drop bonus by item type
+				if (id != nullptr) {
+					if (sd->sc.getSCE(SC_GUM_ETC) && (id->type == IT_USABLE || id->type == IT_HEALING || id->type == IT_ETC))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_ETC)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_EQUIP) && (id->type == IT_ARMOR || id->type == IT_WEAPON))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_EQUIP)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_CARD) && id->type == IT_CARD)
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_CARD)->val1;
+				}
+				// Gum split: apply drop bonus by item type
+				if (id != nullptr) {
+					if (sd->sc.getSCE(SC_GUM_ETC2) && (id->type == IT_USABLE || id->type == IT_HEALING || id->type == IT_ETC))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_ETC2)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_EQUIP2) && (id->type == IT_ARMOR || id->type == IT_WEAPON))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_EQUIP2)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_CARD2) && id->type == IT_CARD)
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_CARD2)->val1;
+				}
+			}
 
 			int32 cap;
 
@@ -2888,6 +2938,133 @@ int32 mob_getdroprate(block_list *src, std::shared_ptr<s_mob_db> mob, int32 base
 
 	return drop_rate;
 }
+
+// puppy @mi
+DropRateResult mob_getdroprate_extended(block_list* src, std::shared_ptr<s_mob_db> mob, int32 base_rate, int32 drop_modifier, mob_data* md, t_itemid nameid, int32 factor) {
+	DropRateResult result;
+	int32 drop_rate = base_rate;
+	int32 drop_rate_bonus = 0;
+
+	if (md && battle_config.mob_size_influence) {  // Change drops depending on monsters size [Valaris]
+		uint32 mob_size = md->special_state.size;
+		if (mob_size == SZ_MEDIUM && drop_rate >= 2)
+			drop_rate /= 2; // SZ_MEDIUM actually is small size modification... this is not a bug!
+		else if (mob_size == SZ_BIG)
+			drop_rate *= 2;
+	}
+
+	std::shared_ptr<item_data> id = nullptr;
+	if (nameid != 0) {
+		id = item_db.find(nameid);
+	}
+
+	if (src) {
+		if (battle_config.drops_by_luk) // Drops affected by luk as a fixed increase [Valaris]
+			drop_rate += (status_get_luk(src) * battle_config.drops_by_luk / 100) * factor;
+		if (battle_config.drops_by_luk2) // Drops affected by luk as a % increase [Skotlex]
+			drop_rate += (int32)(0.5 + drop_rate * status_get_luk(src) * battle_config.drops_by_luk2 / 10000.) * factor;
+
+		if (src->type == BL_PC) { // Player specific drop rate adjustments
+			map_session_data* sd = (map_session_data*)src;
+			int32 drop_rate_bonus = 100;
+
+			// In PK mode players get an additional drop chance bonus of 25% if there is a 20 level difference
+			if (battle_config.pk_mode && (int32)(mob->lv - sd->status.base_level) >= 20) {
+				drop_rate_bonus += 25;
+			}
+
+			// Add class and race specific bonuses
+			drop_rate_bonus += sd->indexed_bonus.dropaddclass[mob->status.class_] + sd->indexed_bonus.dropaddclass[CLASS_ALL];
+			drop_rate_bonus += sd->indexed_bonus.dropaddrace[mob->status.race] + sd->indexed_bonus.dropaddrace[RC_ALL];
+
+			//puppy dropaddrace
+			if (id->type == IT_CARD) {
+				drop_rate_bonus += sd->indexed_bonus.drop_card_addrace[mob->status.race];
+				drop_rate_bonus += sd->indexed_bonus.drop_card_addrace[RC_ALL];
+			}
+			if (id->type == IT_ARMOR || id->type == IT_WEAPON) {
+				drop_rate_bonus += sd->indexed_bonus.drop_equip_addrace[mob->status.race];
+				drop_rate_bonus += sd->indexed_bonus.drop_equip_addrace[RC_ALL];
+			}
+			if (id->type == IT_ETC) {
+				drop_rate_bonus += sd->indexed_bonus.drop_etc_addrace[mob->status.race];
+				drop_rate_bonus += sd->indexed_bonus.drop_etc_addrace[RC_ALL];
+			}
+			//puppy dropaddrace
+
+			if (id && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				if (sd->sc.getSCE(SC_ITEMBOOST))
+					drop_rate_bonus += sd->sc.getSCE(SC_ITEMBOOST)->val1;
+				if (sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND))
+					drop_rate_bonus += sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND)->val1;
+			}
+
+			// gum split (only if item exists)
+			if (id && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				// Gum split: apply drop bonus by item type
+				if (id != nullptr) {
+					if (sd->sc.getSCE(SC_GUM_ETC) && (id->type == IT_USABLE || id->type == IT_HEALING || id->type == IT_ETC))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_ETC)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_EQUIP) && (id->type == IT_ARMOR || id->type == IT_WEAPON))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_EQUIP)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_CARD) && id->type == IT_CARD)
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_CARD)->val1;
+				}
+				// Gum split: apply drop bonus by item type
+				if (id != nullptr) {
+					if (sd->sc.getSCE(SC_GUM_ETC2) && (id->type == IT_USABLE || id->type == IT_HEALING || id->type == IT_ETC))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_ETC2)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_EQUIP2) && (id->type == IT_ARMOR || id->type == IT_WEAPON))
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_EQUIP2)->val1;
+
+					if (sd->sc.getSCE(SC_GUM_CARD2) && id->type == IT_CARD)
+						drop_rate_bonus += sd->sc.getSCE(SC_GUM_CARD2)->val1;
+				}
+			}
+
+			int32 cap;
+
+			if (pc_isvip(sd)) { // Increase item drop rate for VIP.
+				// Unsure how the VIP and other bonuses should stack, this is additive.
+				drop_rate_bonus += battle_config.vip_drop_increase;
+				cap = battle_config.drop_rate_cap_vip;
+			}
+			else
+				cap = battle_config.drop_rate_cap;
+
+			cap *= factor;
+
+			result.normal_drop_rate = drop_rate;
+			result.bonus_drop_rate = (int)(0.5 + drop_rate * (drop_rate_bonus - 100) / 100.);
+			result.total_drop_rate = (int)(0.5 + drop_rate * drop_rate_bonus / 100.);
+
+			// Now limit the drop rate to never be exceed the cap (default: 90%), unless it is originally above it already.
+			if (result.total_drop_rate > cap && base_rate < cap) {
+				result.total_drop_rate = cap;
+			}
+		}
+	}
+
+#ifdef RENEWAL_DROP
+	drop_rate = apply_rate(drop_rate, drop_modifier);
+#endif
+
+	result.total_drop_rate = min(result.total_drop_rate, 10000);
+
+	if (battle_config.drop_rate0item) {
+		result.total_drop_rate = max(result.total_drop_rate, 0);
+	}
+	else {
+		result.total_drop_rate = max(result.total_drop_rate, 1);
+	}
+
+	return result;
+}
+// puppy @mi
+
 
 /**
  * Returns the MVP player based on the monster's damage log
@@ -3329,7 +3506,8 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 			if (it == nullptr)
 				continue;
 
-			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md);
+			//drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md);
+			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
 
 			// attempt to drop the item
 			if (rnd() % 10000 >= drop_rate)
@@ -3421,7 +3599,8 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 				uint32 final_rate;
 
 				if ( battle_config.enable_bonus_map_drops ) {
-					final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
+					//final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
+					final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, it.second->nameid, 10);
 				} else {
 					final_rate = it.second->rate;
 				}
@@ -3442,7 +3621,8 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 					uint32 final_rate;
 
 					if ( battle_config.enable_bonus_map_drops ) {
-						final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
+						//final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
+						final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, it.second->nameid, 10);
 					} else {
 						final_rate = it.second->rate;
 					}

@@ -11,31 +11,32 @@
  * Format:
  *	 <datatype> name;
  **/
- 	int check_stat_bypass;
+ 	int32 check_stat_bypass;
+	int sc_buff_effect_boss;
 
 	// MvP and Mini-Boss Card Ad and Log System [Bad]
-	int announcement_and_log_system;
-	int mvp_card_announce_system;
-	int mvp_card_announce;
-	int dropped_mvp_card_log;
-	int set_drop_announce_color;
-	int mini_boss_card_announce_system;
-	int mini_boss_card_announce;
-	int dropped_mini_boss_card_log;
-	int set_drop_card_announce_color;
+	int32 announcement_and_log_system;
+	int32 mvp_card_announce_system;
+	int32 mvp_card_announce;
+	int32 dropped_mvp_card_log;
+	int32 set_drop_announce_color;
+	int32 mini_boss_card_announce_system;
+	int32 mini_boss_card_announce;
+	int32 dropped_mini_boss_card_log;
+	int32 set_drop_card_announce_color;
 
 	//[puppy] RefineUI Options
-	int refine_announce_success;
-	int refine_announce_broken;
-	int refine_option_announce;
-	int refine_option_color;
-	int refine_option_color_self;
-	int refine_broken_color;
-	int refine_normal_color;
-	int blacksmith_downgrade;
+	int32 refine_announce_success;
+	int32 refine_announce_broken;
+	int32 refine_option_announce;
+	int32 refine_option_color;
+	int32 refine_option_color_self;
+	int32 refine_broken_color;
+	int32 refine_normal_color;
+	int32 blacksmith_downgrade;
 
-	int refine_pass_system_enable;
-	int refine_costume_pass_system_enable;
+	int32 refine_pass_system_enable;
+	int32 refine_costume_pass_system_enable;
 
 	int32 trickdead_noexp;
 

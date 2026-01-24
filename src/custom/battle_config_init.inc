@@ -11,6 +11,7 @@
  *	 { "name", &battle_config.<variable name>, <default value>, <minimum value>, <maximum value> },
  **/
 	{ "check_stat_bypass",					&battle_config.check_stat_bypass,				0,		0,		1				},
+	{ "sc_buff_effect_boss",				&battle_config.sc_buff_effect_boss,				0,      0,      1,				},
 
 	// MvP and Mini-Boss Card Ad and Log System [Bad]
 	{ "announcement_and_log_system",        &battle_config.announcement_and_log_system,     1,      0,      1,              },
