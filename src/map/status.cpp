@@ -485,6 +485,10 @@ bool RefineDatabase::calculate_refine_info( const struct item_data& data, e_refi
 		level = 1;
 
 		return true;
+	}else if( data.type == IT_CHARM && battle_config.charm_refine_enable){	// Charm Refine
+		refine_type = REFINE_TYPE_CHARM;
+		level = 1;
+		return true;
 	}else{
 		return false;
 	}
@@ -3907,7 +3911,19 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 		pet_delautobonus(*sd, sd->pd->autobonus2, true);
 		pet_delautobonus(*sd, sd->pd->autobonus3, true);
 	}
-
+	
+	for (i = 0; i < MAX_INVENTORY; i++)
+	{
+		if (!sd->inventory_data[i] || sd->inventory_data[i]->type != IT_CHARM)
+			continue;
+		if (sd->inventory_data[i]->script && sd->inventory_data[i]->elv <= sd->status.base_level && sd->inventory_data[i]->class_upper)
+		{
+			current_equip_item_index = i;
+			run_script(sd->inventory_data[i]->script, 0, sd->id, 0);
+			if (!calculating)
+				return 1;
+		}
+	}
 	
 	// Party Bonus
 	if( battle_config.party_bonus_system_enable ){

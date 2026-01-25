@@ -3899,6 +3899,7 @@
 	export_constant(IT_PETARMOR);
 	export_constant(IT_AMMO);
 	export_constant(IT_DELAYCONSUME);
+	export_constant(IT_CHARM);
 	export_constant(IT_SHADOWGEAR);
 	export_constant(IT_CASH);
 
@@ -10918,6 +10919,7 @@
 	export_constant(REFINE_TYPE_WEAPON);
 	export_constant(REFINE_TYPE_SHADOW_ARMOR);
 	export_constant(REFINE_TYPE_SHADOW_WEAPON);
+	export_constant(REFINE_TYPE_CHARM);	// Charm Refine
 
 	/* autospell flags */
 	export_constant(AUTOSPELL_FORCE_SELF);

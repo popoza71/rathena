@@ -12,6 +12,7 @@
  **/
 	{ "check_stat_bypass",					&battle_config.check_stat_bypass,				0,		0,		1				},
 	{ "sc_buff_effect_boss",				&battle_config.sc_buff_effect_boss,				0,      0,      1,				},
+	{ "charm_refine_enable",				&battle_config.charm_refine_enable,	0,	0,	1,	},	// Charm Refine
 
 	{ "party_bonus_system_enable",			&battle_config.party_bonus_system_enable,		0,	0,	1,	},
 	{ "party_bonus_same_map_minimum",		&battle_config.party_bonus_same_map_minimum,	1,	0,	MAX_PARTY,	},

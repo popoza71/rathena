@@ -15981,7 +15981,8 @@ BUILDIN_FUNC(getpetinfo)
 		case PETINFO_LEVEL:		script_pushint(st,(int32)pd->pet.level); break;
 		case PETINFO_BLOCKID:	script_pushint(st,pd->id); break;
 		case PETINFO_EGGID:		script_pushint(st,pd->pet.egg_id); break;
-		case PETINFO_FOODID:	script_pushint(st,pd->get_pet_db()->FoodID); break;
+		//case PETINFO_FOODID:	script_pushint(st,pd->get_pet_db()->FoodID); break;
+		case PETINFO_FOODID:	script_pushint(st, pd->get_pet_db()->FoodID); break;
 		default:
 			script_pushint(st,0);
 			break;

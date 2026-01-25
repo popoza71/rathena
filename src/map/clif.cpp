@@ -116,7 +116,8 @@ static inline int32 itemtype(t_itemid nameid) {
 		else
 			return IT_ARMOR;
 	}
-	return ( type == IT_PETEGG ) ? IT_ARMOR : type;
+	//return ( type == IT_PETEGG ) ? IT_ARMOR : type;
+	return (type == IT_PETEGG) ? IT_ARMOR : (type == IT_CHARM) ? IT_ARMOR : type;
 }
 
 // TODO: doc
@@ -22932,6 +22933,7 @@ void clif_parse_refineui_refine( int32 fd, map_session_data* sd ){
 		if( id->type == IT_WEAPON ){
 			achievement_update_objective( sd, AG_ENCHANT_SUCCESS, 2, id->weapon_level, item->refine );
 		}
+		if ( id->type == IT_CHARM ) status_calc_pc(sd, SCO_NONE);
 		clif_refineui_info( sd, index );
 	}else{
 		// Failure
@@ -23004,6 +23006,7 @@ void clif_parse_refineui_refine( int32 fd, map_session_data* sd ){
 			clif_refineui_info( sd, index );
 		}
 
+		if ( id->type == IT_CHARM ) status_calc_pc(sd, SCO_NONE);
 		clif_misceffect( *sd, NOTIFYEFFECT_REFINE_FAILURE );
 		achievement_update_objective( sd, AG_ENCHANT_FAIL, 1, 1 );
 	}
