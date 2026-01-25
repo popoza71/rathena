@@ -485,6 +485,11 @@ bool RefineDatabase::calculate_refine_info( const struct item_data& data, e_refi
 		level = 1;
 
 		return true;
+	}else if( data.type == IT_PETEGG && battle_config.pet_refine_enable){	// Pet Refine
+		refine_type = REFINE_TYPE_PETEGG;
+		level = 1;
+
+		return true;
 	}else if( data.type == IT_CHARM && battle_config.charm_refine_enable){	// Charm Refine
 		refine_type = REFINE_TYPE_CHARM;
 		level = 1;

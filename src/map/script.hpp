@@ -399,7 +399,8 @@ enum petinfo_types {
 	PETINFO_LEVEL,
 	PETINFO_BLOCKID,
 	PETINFO_EGGID,
-	PETINFO_FOODID
+	PETINFO_FOODID,
+	PETINFO_REFINE	// Pet Refine
 };
 
 enum e_questinfo_types {

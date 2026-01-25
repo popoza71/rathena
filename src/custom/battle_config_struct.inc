@@ -14,11 +14,13 @@
  	int32 check_stat_bypass;
 	int32 sc_buff_effect_boss;
 
+	int32 charm_refine_enable;	// Charm Refine
+	int32 pet_refine_enable;	// Pet Refine
+
 	int32 party_bonus_system_enable;
 	int32 party_bonus_same_map_minimum;
 	int32 party_bonus_update_delay;
 	int32 party_bonus_system_count_enable;
-	int32 charm_refine_enable;	// Charm Refine
 
 	// MvP and Mini-Boss Card Ad and Log System [Bad]
 	int32 announcement_and_log_system;

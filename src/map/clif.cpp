@@ -10001,6 +10001,26 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 					break;
 				case BL_PET:
 					safestrncpy(packet.name, static_cast<const pet_data*>(bl)->pet.name, NAME_LENGTH);
+
+					// Pet Refine
+					if( !battle_config.pet_refine_enable ){
+						safestrncpy(packet.name, ((TBL_PET *)bl)->pet.name, NAME_LENGTH);
+					}else{
+						map_session_data* sd;
+						int idp;
+						sd = ((TBL_PET *)bl)->master;
+						if( sd ){
+							ARR_FIND(0, MAX_INVENTORY, idp, sd->inventory.u.items_inventory[idp].card[0] == CARD0_PET && sd->inventory.u.items_inventory[idp].attribute == 1 );
+						}
+						if ( idp < MAX_INVENTORY && sd ){
+							char pet_name_refine[NAME_LENGTH+10];
+							sprintf(pet_name_refine,"%s (+%d)",((TBL_PET *)bl)->pet.name,sd->inventory.u.items_inventory[idp].refine);
+							safestrncpy(packet.name, pet_name_refine, NAME_LENGTH);
+						}else{
+							safestrncpy(packet.name, ((TBL_PET *)bl)->pet.name, NAME_LENGTH);
+						}
+					}
+
 					break;
 				case BL_NPC:
 					safestrncpy(packet.name, static_cast<const npc_data*>(bl)->name, NAME_LENGTH);

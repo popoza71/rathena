@@ -15983,6 +15983,20 @@ BUILDIN_FUNC(getpetinfo)
 		case PETINFO_EGGID:		script_pushint(st,pd->pet.egg_id); break;
 		//case PETINFO_FOODID:	script_pushint(st,pd->get_pet_db()->FoodID); break;
 		case PETINFO_FOODID:	script_pushint(st, pd->get_pet_db()->FoodID); break;
+		// Pet Refine
+		case PETINFO_REFINE:
+			if( !battle_config.pet_refine_enable ){
+				script_pushint(st,0);
+			}else{
+				int i;
+				if( sd )
+					ARR_FIND(0, MAX_INVENTORY, i, sd->inventory.u.items_inventory[i].card[0] == CARD0_PET && sd->inventory.u.items_inventory[i].attribute == 1 );
+				if ( i < MAX_INVENTORY && sd )
+					script_pushint(st, sd->inventory.u.items_inventory[i].refine);
+				else
+					script_pushint(st,0);
+			}
+			break;		
 		default:
 			script_pushint(st,0);
 			break;
