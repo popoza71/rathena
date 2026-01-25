@@ -15,4 +15,5 @@ ACMD_DEF(itemmap),
 ACMD_DEF2("itemmapbound",itemmap),
 
 ACMD_DEF2("reloadrefinepassdb",reload),
+ACMD_DEF2("reloadpartybonusdb",reload),
 

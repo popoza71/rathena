@@ -7233,6 +7233,12 @@ enum e_setpos pc_setpos(map_session_data* sd, uint16 mapindex, int32 x, int32 y,
 	sd->x = sd->ud.to_x = x;
 	sd->y = sd->ud.to_y = y;
 
+	// Party Bonus
+	if( battle_config.party_bonus_system_enable && sd->status.party_id){
+		struct party_data *p = party_search(sd->status.party_id);
+		if( p )	p->recal = true;
+	}
+
 	if( sd->status.guild_id > 0 && mapdata->getMapFlag(MF_GVG_CASTLE) )
 	{	// Increased guild castle regen [Valaris]
 		std::shared_ptr<guild_castle> gc = castle_db.mapindex2gc(sd->mapindex);
@@ -9994,6 +10000,13 @@ int32 pc_dead(map_session_data *sd,block_list *src)
 	pc_setparam(sd, SP_PCDIECOUNTER, sd->die_counter+1);
 	pc_setparam(sd, SP_KILLERRID, src?src->id:0);
 
+	// Party Bonus
+	// When someone in a party is dead
+	if( battle_config.party_bonus_system_enable && sd->status.party_id ){
+		party_data* p = party_search( sd->status.party_id );
+			if( p )	p->recal = true;
+	}
+
 	if (battle_config.loose_ap_on_death == 1)
 		status_percent_damage( nullptr, sd, 0, 0, 100, 0 );
 
@@ -10265,6 +10278,14 @@ void pc_revive(map_session_data *sd,uint32 hp, uint32 sp, uint32 ap) {
 		guild_guildaura_refresh(sd,GD_SOULCOLD,guild_checkskill(sd->guild->guild,GD_SOULCOLD));
 		guild_guildaura_refresh(sd,GD_HAWKEYES,guild_checkskill(sd->guild->guild,GD_HAWKEYES));
 	}
+	
+	// Party Bonus
+	// when sd is revived
+	if( battle_config.party_bonus_system_enable && sd->status.party_id){
+		struct party_data *p = party_search(sd->status.party_id);
+		if( p )	p->recal = true;
+	}
+
 }
 
 bool pc_revive_item(map_session_data *sd) {
@@ -11177,6 +11198,8 @@ bool pc_jobchange(map_session_data *sd,int32 job, char upper)
 			if( i < MAX_PARTY ){
 				p->party.member[i].class_ = sd->status.class_;
 				clif_party_job_and_level( *sd );
+				// Party Bonus
+				if( battle_config.party_bonus_system_enable )	p->recal = true;
 			}
 		}
 	}

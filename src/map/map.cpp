@@ -2328,6 +2328,12 @@ int32 map_quit(map_session_data *sd) {
 	pc_macro_detector_disconnect(*sd);
 	chrif_save(sd, CSAVE_QUIT|CSAVE_INVENTORY|CSAVE_CART);
 	unit_free_pc(sd);
+	// Party Bonus
+	if( sd->status.party_id && battle_config.party_bonus_system_enable ){
+		struct party_data *p = party_search(sd->status.party_id);
+		if( p )	p->recal = true;
+	}
+
 	return 0;
 }
 

@@ -31,6 +31,7 @@
 #include "mob.hpp"
 #include "npc.hpp"
 #include "path.hpp"
+#include "party.hpp"
 #include "pc.hpp"
 #include "pc_groups.hpp"
 #include "pet.hpp"
@@ -3905,6 +3906,61 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 		pet_delautobonus(*sd, sd->pd->autobonus, true);
 		pet_delautobonus(*sd, sd->pd->autobonus2, true);
 		pet_delautobonus(*sd, sd->pd->autobonus3, true);
+	}
+
+	
+	// Party Bonus
+	if( battle_config.party_bonus_system_enable ){
+		if( sd->status.party_id ){
+			struct party_data *p = party_search(sd->status.party_id);
+			if(party_foreachsamemap(party_sub_count, sd, 0) >= battle_config.party_bonus_same_map_minimum){
+				for ( auto &partyjobbonus : PartyJobBonusDb ) {
+					if ( party_job_bonus_check_job( p, partyjobbonus.second->job_id ,sd ) || !partyjobbonus.second->job_id ) {
+						run_script(partyjobbonus.second->script, 0, sd->id, 0);
+						if(partyjobbonus.second->icon)
+							clif_status_change(sd, partyjobbonus.second->icon, 1, -1, 0, 0, 0);
+					}else{
+						if( partyjobbonus.second->icon )
+							clif_status_change(sd, partyjobbonus.second->icon, 0, 0, 0, 0, 0);
+					}
+				}
+			}else{
+				for ( auto &partyjobbonus : PartyJobBonusDb ) {
+					if( partyjobbonus.second->icon )
+						clif_status_change(sd, partyjobbonus.second->icon, 0, 0, 0, 0, 0);
+				}
+			}
+		}else if( sd->force_remove_party_ef ){
+			sd->force_remove_party_ef = false;
+			for ( auto &partyjobbonus : PartyJobBonusDb ) {
+				if( partyjobbonus.second->icon )
+					clif_status_change(sd, partyjobbonus.second->icon, 0, 0, 0, 0, 0);
+			}
+			// Party Bonus COUNT part
+			for ( auto &partycountbonus : PartyCountBonusDb ) {
+				if( partycountbonus.second->icon )
+					clif_status_change(sd, partycountbonus.second->icon, 0, 0, 0, 0, 0);
+			}
+		}
+	}
+	
+	if( battle_config.party_bonus_system_count_enable ){
+		if( sd->status.party_id ){
+			// Party Bonus COUNT part
+			for ( auto &partycountbonus : PartyCountBonusDb ) {
+				if( partycountbonus.second->icon )
+					clif_status_change(sd, partycountbonus.second->icon, 0, 0, 0, 0, 0);
+			}
+			int party_count_bonus_id = 0;
+			party_count_bonus_id = party_foreachsamemap(party_bonus_sub_count, sd, 0);
+			auto partycountbonus = PartyCountBonusDb.find(party_count_bonus_id);
+				
+				if( partycountbonus != nullptr && !sd->state.autotrade && !pc_isdead(sd) && !sd->state.vending && !sd->chatID && !sd->state.buyingstore ){
+					run_script(partycountbonus->script, 0, sd->id, 0);
+					if(partycountbonus->icon)
+						clif_status_change(sd, partycountbonus->icon, 1, -1, 0, 0, 0);
+				}
+		}
 	}
 
 	custom_buff(sd);

@@ -10814,6 +10814,11 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
 	if(sd->status.party_id) {
 		party_send_movemap(sd);
 		clif_party_hp( *sd ); // Show hp after displacement [LuzZza]
+		// Party Bonus
+		if( battle_config.party_bonus_system_enable ){
+			party_data* p = party_search( sd->status.party_id );
+			if( p )	p->recal = true;
+		}
 	}
 
 	if( sd->bg_id ) clif_bg_hp(sd); // BattleGround System

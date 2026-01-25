@@ -6,7 +6,9 @@
 
 #include <cstdarg>
 
+#include <common/database.hpp>
 #include <common/mmo.hpp> // struct party
+#include "status.hpp" // unit_data
 
 struct block_list;
 class map_session_data;
@@ -33,6 +35,9 @@ struct party_data {
 		unsigned snovice :1; //There's a Super Novice
 		unsigned tk : 1; //There's a taekwon
 	} state;
+	bool recal;
+	t_tick next_update;
+
 };
 
 struct party_booking_detail {
@@ -54,6 +59,45 @@ struct s_party_booking_requirement{
 };
 
 extern int32 party_create_byscript;
+
+// Party Bonus
+struct s_party_job_bonus {
+	uint16 id;
+	uint16 job_id;
+	enum efst_type icon;
+	struct script_code *script;
+};
+
+struct s_party_count_bonus {
+	enum efst_type icon;
+	struct script_code *script;
+};
+
+class PartyJobBonusDatabase : public TypesafeCachedYamlDatabase<uint16, s_party_job_bonus> {
+public:
+	PartyJobBonusDatabase() : TypesafeCachedYamlDatabase("PARTY_JOB_BONUS_DB", 1) {
+
+	}
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() {}
+};
+extern PartyJobBonusDatabase PartyJobBonusDb;
+void partybonusdb_reload(void);
+int32 party_job_bonus_check_job(struct party_data *p, uint16 job_id, map_session_data *sd);
+
+class PartyCountBonusDatabase : public TypesafeCachedYamlDatabase<uint16, s_party_count_bonus> {
+public:
+	PartyCountBonusDatabase() : TypesafeCachedYamlDatabase("PARTY_COUNT_BONUS_DB", 1) {
+
+	}
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() {}
+};
+extern PartyCountBonusDatabase PartyCountBonusDb;
+int32 party_job_bonus_check_job(struct party_data *p, uint16 job_id, map_session_data *sd);
+// End Party Bonus
 
 void do_init_party(void);
 void do_final_party(void);
@@ -106,5 +150,7 @@ void party_booking_register(map_session_data *sd, int16 level, int16 mapid, int1
 void party_booking_update(map_session_data *sd, int16* job);
 void party_booking_search(map_session_data *sd, int16 level, int16 mapid, int16 job, unsigned long lastindex, int16 resultcount);
 bool party_booking_delete(map_session_data *sd);
+
+int32 party_bonus_sub_count(struct block_list* bl, va_list ap);
 
 #endif /* PARTY_HPP */

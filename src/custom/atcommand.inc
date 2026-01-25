@@ -155,3 +155,12 @@ ACMD_FUNC(reloadrefinepassdb){
 	return 0;
 }
 
+ACMD_FUNC(reloadpartybonusdb){
+	nullpo_retr(-1, sd);
+
+	PartyJobBonusDb.reload();
+	PartyCountBonusDb.reload();
+	clif_displaymessage(fd, "Party Bonus database has been reloaded."); 
+
+	return 0;
+}

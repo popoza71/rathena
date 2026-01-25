@@ -12,7 +12,12 @@
  *	 <datatype> name;
  **/
  	int32 check_stat_bypass;
-	int sc_buff_effect_boss;
+	int32 sc_buff_effect_boss;
+
+	int32 party_bonus_system_enable;
+	int32 party_bonus_same_map_minimum;
+	int32 party_bonus_update_delay;
+	int32 party_bonus_system_count_enable;
 
 	// MvP and Mini-Boss Card Ad and Log System [Bad]
 	int32 announcement_and_log_system;

@@ -36,6 +36,9 @@ static unsigned long party_booking_nextid = 1;
 TIMER_FUNC(party_send_xy_timer);
 int32 party_create_byscript;
 
+PartyJobBonusDatabase PartyJobBonusDb;
+PartyCountBonusDatabase PartyCountBonusDb;
+
 /*==========================================
  * Fills the given party_member structure according to the sd provided.
  * Used when creating/adding people to a party. [Skotlex]
@@ -100,6 +103,12 @@ static TBL_PC* party_sd_check(int32 party_id, uint32 account_id, uint32 char_id)
 	return sd;
 }
 
+static void party_bonus_read(void) {
+	PartyJobBonusDb.load();
+	PartyCountBonusDb.load();
+}
+
+
 /*==========================================
  * Destructor
  * Called in map shutdown, cleanup var
@@ -108,6 +117,8 @@ void do_final_party(void)
 {
 	party_db->destroy(party_db,nullptr);
 	party_booking_db->destroy(party_booking_db,nullptr); // Party Booking [Spiria]
+	PartyJobBonusDb.clear();
+	PartyCountBonusDb.clear();
 }
 // Constructor, init vars
 void do_init_party(void)
@@ -116,6 +127,9 @@ void do_init_party(void)
 	party_booking_db = idb_alloc(DB_OPT_RELEASE_DATA); // Party Booking [Spiria]
 	add_timer_func_list(party_send_xy_timer, "party_send_xy_timer");
 	add_timer_interval(gettick()+battle_config.party_update_interval, party_send_xy_timer, 0, 0, battle_config.party_update_interval);
+	PartyJobBonusDb.load();
+	PartyCountBonusDb.load();
+
 }
 
 /// Party data lookup using party id.
@@ -222,6 +236,30 @@ int32 party_recv_noinfo(int32 party_id, uint32 char_id)
 			sd->status.party_id = 0;
 	}
 
+	return 0;
+}
+
+// Party Bonus
+int32 party_job_bonus_check_job(struct party_data *p,uint16 job_id, map_session_data *sd)
+{
+	int32 i;
+	memset(&p->state, 0, sizeof(p->state));
+	char mapname[MAP_NAME_LENGTH];
+	
+	for (i = 0; i < MAX_PARTY && sd; i ++) {
+		if( p->party.member[i].char_id == sd->status.char_id)	// Not include self
+			continue;
+		if (!p->party.member[i].online)
+			continue;
+		TBL_PC* psd;
+		if( (psd = p->data[i].sd) == NULL || pc_isdead(psd) || psd->state.vending || psd->chatID || psd->state.buyingstore )
+			continue;
+		
+		safestrncpy(mapname, mapindex_id2name(sd->mapindex), MAP_NAME_LENGTH);
+		if(p->party.member[i].class_ == job_id && strcmp(p->party.member[i].map,mapname) == 0 ){
+			return 1;
+		}
+	}
 	return 0;
 }
 
@@ -692,6 +730,11 @@ int32 party_member_added(int32 party_id,uint32 account_id,uint32 char_id, int32 
 	if (p->instance_id > 0)
 		instance_reqinfo(sd, p->instance_id);
 
+	// Party Bonus WHEN sd joined a party
+	if( battle_config.party_bonus_system_enable && sd->status.party_id){
+		p->recal = true;
+	}
+	
 	return 0;
 }
 
@@ -727,6 +770,13 @@ bool party_removemember( map_session_data& sd, uint32 account_id, const char* na
 
 	party_trade_bound_cancel(sd);
 	intif_party_leave(p->party.party_id,account_id,p->party.member[i].char_id,p->party.member[i].name,PARTY_MEMBER_WITHDRAW_EXPEL);
+
+	// Party Bonus: check if online, must remove icon and force call
+	map_session_data * tsd = map_id2sd(account_id);
+	if( tsd && tsd->status.char_id == p->party.member[i].char_id){
+		tsd->force_remove_party_ef = true;
+		status_calc_pc(tsd, SCO_FORCE);
+	}
 
 	return true;
 }
@@ -832,6 +882,14 @@ int32 party_member_withdraw(int32 party_id, uint32 account_id, uint32 char_id, c
 #endif
 
 		sd->status.party_id = 0;
+
+		// Party Bonus WHEN sd left a party
+		if( battle_config.party_bonus_system_enable ){
+			sd->force_remove_party_ef = true;
+			status_calc_pc(sd, SCO_FORCE);	//Must FORCE cause the requestor left the party
+			p->recal = true;
+		}
+
 		clif_name_area(sd); //Update name display [Skotlex]
 		//TODO: hp bars should be cleared too
 
@@ -1203,6 +1261,18 @@ TIMER_FUNC(party_send_xy_timer){
 				clif_party_hp( *sd );
 				p->data[i].hp = sd->battle_status.hp;
 			}
+			
+			// Party Bonus
+			if( battle_config.party_bonus_system_enable && p->recal && sd->fd && sd->state.pc_loaded && !sd->state.connect_new && sd->state.active && !sd->state.warping) {
+				if(p->next_update < gettick())
+					status_calc_pc(sd, SCO_NONE);
+			}
+		}
+		// Party Bonus
+		if( battle_config.party_bonus_system_enable && p->next_update < gettick() && p->recal ){
+			p->next_update = gettick()+battle_config.party_bonus_update_delay;
+			p->recal = false;
+
 		}
 	}
 	dbi_destroy(iter);
@@ -1389,6 +1459,16 @@ int32 party_sub_count(block_list *bl, va_list ap)
 	return 1;
 }
 
+int32 party_bonus_sub_count(struct block_list *bl, va_list ap)
+{
+	map_session_data *sd = (TBL_PC *)bl;
+
+	if ( sd->state.autotrade || pc_isdead(sd) || sd->state.vending || sd->chatID || sd->state.buyingstore )
+		return 0;
+
+	return 1;
+}
+
 /**
  * To use for counting classes in a party.
  * @param bl: Object invoking the counter
@@ -1570,4 +1650,166 @@ bool party_booking_delete(map_session_data *sd)
 	}
 
 	return true;
+}
+
+
+// Party Bonus
+const std::string PartyJobBonusDatabase::getDefaultLocation() {
+    return std::string(db_path) + "/custom/party_job_bonus_db.yml";
+}
+
+uint64 PartyJobBonusDatabase::parseBodyNode(const ryml::NodeRef& node) {
+    uint16 id;
+
+    if (!this->asUInt16(node, "Id", id))
+        return 0;
+
+    std::shared_ptr<s_party_job_bonus> partybonus = this->find(id);
+    bool exists = partybonus != nullptr;
+
+    if (!exists) {
+        if (!this->nodesExist(node, { "Id" }))
+            return 0;
+
+        partybonus = std::make_shared<s_party_job_bonus>();
+        partybonus->id = id;
+    }
+
+    if (this->nodeExists(node, "Job")) {
+        std::string job_name;
+
+        if (!this->asString(node, "Job", job_name))
+            return 0;
+
+        const auto& jobNode = node["Job"];
+
+        if (job_name == "All"){
+            partybonus->job_id = 0;
+        }else{
+            int64 constant;
+            std::string job_name_constant = "JOB_" + job_name;
+        
+            if (!script_get_constant(job_name_constant.c_str(), &constant) || !pcdb_checkid(constant)) {
+                this->invalidWarning(node["Job"], "Invalid job %s.\n", job_name.c_str());
+                return 0;
+            }
+    
+            partybonus->job_id = static_cast<uint16>(constant);
+        }
+    } else {
+        if (!exists) {
+            partybonus->job_id = 0;
+        }
+    }
+	if (this->nodeExists(node, "Icon")) {
+        std::string icon_name;
+
+        if (!this->asString(node, "Icon", icon_name))
+            return 0;
+
+        int64 constant;
+
+        if (!script_get_constant(icon_name.c_str(), &constant)) {
+            this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+            constant = EFST_BLANK;
+        }
+        
+        if (constant < EFST_BLANK || constant >= EFST_MAX) {
+            this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+            constant = EFST_BLANK;
+        }
+
+        partybonus->icon = static_cast<efst_type>(constant);
+    } else {
+        if (!exists)
+            partybonus->icon = EFST_BLANK;
+    }
+
+    if (this->nodeExists(node, "Script")) {
+        std::string script;
+
+        if (!this->asString(node, "Script", script))
+            return 0;
+
+        if (partybonus->script) {
+            aFree(partybonus->script);
+            partybonus->script = nullptr;
+        }
+
+        partybonus->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+    }
+
+    if (!exists)
+        this->put(id, partybonus);
+
+    return 1;
+}
+
+// Party Bonus Count Member
+const std::string PartyCountBonusDatabase::getDefaultLocation() {
+    return std::string(db_path) + "/custom/party_count_bonus_db.yml";
+}
+
+uint64 PartyCountBonusDatabase::parseBodyNode(const ryml::NodeRef& node) {
+    uint16 count;
+
+    if (!this->asUInt16(node, "Count", count))
+        return 0;
+
+    std::shared_ptr<s_party_count_bonus> partybonus = this->find(count);
+    bool exists = partybonus != nullptr;
+
+    if (!exists) {
+        if (!this->nodesExist(node, { "Count" }))
+            return 0;
+		
+		if( count > MAX_PARTY || count < 0 ){
+			this->invalidWarning(node["Count"], "Invalid count %d, Max Party is %d\n", count, MAX_PARTY);
+			return 0;
+		}
+        partybonus = std::make_shared<s_party_count_bonus>();
+    }
+
+	if (this->nodeExists(node, "Icon")) {
+        std::string icon_name;
+
+        if (!this->asString(node, "Icon", icon_name))
+            return 0;
+
+        int64 constant;
+
+        if (!script_get_constant(icon_name.c_str(), &constant)) {
+            this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+            constant = EFST_BLANK;
+        }
+        
+        if (constant < EFST_BLANK || constant >= EFST_MAX) {
+            this->invalidWarning(node["Icon"], "Icon (EFST) %s is invalid, set EFST_BLANK instead.\n", icon_name.c_str());
+            constant = EFST_BLANK;
+        }
+
+        partybonus->icon = static_cast<efst_type>(constant);
+    } else {
+        if (!exists)
+            partybonus->icon = EFST_BLANK;
+    }
+
+    if (this->nodeExists(node, "Script")) {
+        std::string script;
+
+        if (!this->asString(node, "Script", script))
+            return 0;
+
+        if (partybonus->script) {
+            aFree(partybonus->script);
+            partybonus->script = nullptr;
+        }
+
+        partybonus->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+    }
+
+    if (!exists)
+        this->put(count, partybonus);
+
+    return 1;
 }
