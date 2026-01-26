@@ -301,6 +301,18 @@ enum e_autospell_flags{
 	AUTOSPELL_FORCE_ALL = 0x3
 };
 
+/**
+ * Player blocking actions related flags.
+ */
+enum e_collection_flag : uint16 {
+	PCCOLLECTION_CLEAR    = 0x00,
+	PCCOLLECTION_LOAD     = 0x01,
+	PCCOLLECTION_RELOAD   = 0x02,
+	PCCOLLECTION_RECAL    = 0x04,
+	PCCOLLECTION_ALL  	  = 0x07,
+};
+
+
 /// AutoSpell bonus struct
 struct s_autospell {
 	uint16 id, lv, trigger_skill;
@@ -468,6 +480,7 @@ public:
 		bool roulette_open;
 		t_itemid item_reform;
 		uint64 item_enchant_index;
+		unsigned int collection_flag : 5;
 		bool craft_barter;
 	} state;
 	struct {
@@ -968,6 +981,8 @@ public:
 	s_macro_detect macro_detect;
 
 	std::vector<uint32> party_booking_requests;
+
+	std::vector<t_itemid> collection_list;
 	
 	// Party Bonus
 	bool force_remove_party_ef;
@@ -1829,5 +1844,8 @@ void pc_macro_reporter_process(map_session_data &sd, int32 reporter_account_id =
 #ifdef MAP_GENERATOR
 void pc_reputation_generate();
 #endif
+
+void pc_collection_load(map_session_data &sd);
+void pc_collection_update(struct s_storage* stor, map_session_data& sd);
 
 #endif /* PC_HPP */

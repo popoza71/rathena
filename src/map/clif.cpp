@@ -11001,6 +11001,9 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
 		if (!sd->state.autotrade) { // Don't trigger NPC event or opening vending/buyingstore will be failed
 			npc_script_event( *sd, NPCE_LOGIN );
 
+			//Collection Event
+			pc_collection_load(*sd);
+
 // VIP status
 #ifdef VIP_ENABLE
 			// force VIP reset on login
@@ -11009,7 +11012,6 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
 				sc_start(NULL, sd, SC_VIPSTATE, 100, 1, (sd->vip.time-time(NULL)) * 1000);
 #endif
 // VIP status
-
 
 		}
 
@@ -20938,6 +20940,11 @@ void roulette_generate_bonus( map_session_data& sd ){
 void clif_roulette_open( map_session_data* sd ){
 	nullpo_retv( sd );
 
+	//open npc name Collection_Script
+	npc_event_do_id("Collection_Script::OnLabel", sd->status.account_id);
+
+	//disable roulette
+	/*
 	roulette_generate_bonus( *sd );
 
 	struct packet_roulette_open_ack p;
@@ -20955,6 +20962,7 @@ void clif_roulette_open( map_session_data* sd ){
 	sd->state.roulette_open = true;
 
 	clif_send( &p, sizeof( p ), sd, SELF );
+	*/
 }
 
 /// Request to open the roulette window
