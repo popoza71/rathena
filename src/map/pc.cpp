@@ -10295,11 +10295,23 @@ void pc_revive(map_session_data *sd,uint32 hp, uint32 sp, uint32 ap) {
 bool pc_revive_item(map_session_data *sd) {
 	nullpo_retr(false, sd);
 
+	//puppy MF_NOTOKEN
+	int16 m = 0;
+	struct map_data* mapdata = map_getmapdata(m);
+	//puppy MF_NOTOKEN
+
 	if (!pc_isdead(sd) || sd->respawn_tid != INVALID_TIMER)
 		return false;
 
 	if (sd->sc.getSCE(SC_HELLPOWER)) // Cannot resurrect while under the effect of SC_HELLPOWER.
 		return false;
+
+	//puppy MF_NOTOKEN
+	if (map_getmapflag(sd->m, MF_NOTOKEN)) {
+		clif_showscript(sd, msg_txt(NULL, 2508), SELF);
+		return false;
+	}
+	//puppy MF_NOTOKEN
 
 	int16 item_position = itemdb_group.item_exists_pc(sd, IG_TOKEN_OF_SIEGFRIED);
 	uint8 hp = 100, sp = 100;
