@@ -44,6 +44,7 @@
 
 	{ "refine_pass_system_enable",			&battle_config.refine_pass_system_enable,		0,	0,	1,			},
 	{ "refine_costume_pass_system_enable",	&battle_config.refine_costume_pass_system_enable, 0, 0, 1, },
+	{ "costume_head_refine_def",			&battle_config.costume_head_refine_def,		    1,	0,	1,			},	// puppy cos refine
 
 	{ "trickdead_noexp",						&battle_config.trickdead_noexp,					1,      0,      1, },
 

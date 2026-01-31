@@ -45,6 +45,8 @@
 
 	int32 refine_pass_system_enable;
 	int32 refine_costume_pass_system_enable;
+	int32 costume_head_refine_def;	// puppy cos refine
+
 
 	int32 trickdead_noexp;
 

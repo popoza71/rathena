@@ -4114,9 +4114,19 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 				if (!wa->ele) // Do not overwrite element from previous bonuses.
 					wa->ele = (sd->inventory.u.items_inventory[index].card[1]&0x0f);
 			}
+		//} else if(sd->inventory_data[index]->type == IT_ARMOR) {
+		//	if( info != nullptr ){
+		//		refinedef += info->bonus;
+		// puppy cos refine
 		} else if(sd->inventory_data[index]->type == IT_ARMOR) {
-			if( info != nullptr ){
-				refinedef += info->bonus;
+            const bool is_costume_head =
+                (i == EQI_COSTUME_HEAD_TOP || i == EQI_COSTUME_HEAD_MID || i == EQI_COSTUME_HEAD_LOW);
+
+            if( info != nullptr ){
+                if( !is_costume_head || battle_config.costume_head_refine_def ){
+                    refinedef += info->bonus;
+                }
+		// puppy cos refine
 
 #ifdef RENEWAL
 				if( sd->inventory_data[index]->armor_level == 2 ){
