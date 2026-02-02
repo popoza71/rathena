@@ -3498,6 +3498,30 @@
 	/* vip state */
 	export_constant(EFST_VIPSTATE);
 
+	//Member Rank
+	export_constant(EFST_MEMBER_LV1);
+	export_constant(EFST_MEMBER_LV2);
+	export_constant(EFST_MEMBER_LV3);
+	export_constant(EFST_MEMBER_LV4);
+	export_constant(EFST_MEMBER_LV5);
+	export_constant(EFST_MEMBER_LV6);
+	export_constant(EFST_MEMBER_LV7);
+	export_constant(EFST_MEMBER_LV8);
+	export_constant(EFST_MEMBER_LV9);
+	export_constant(EFST_MEMBER_LV10);
+
+	//Member Club
+	export_constant(EFST_MEMBER_CLUB_LV1);
+	export_constant(EFST_MEMBER_CLUB_LV2);
+	export_constant(EFST_MEMBER_CLUB_LV3);
+	export_constant(EFST_MEMBER_CLUB_LV4);
+	export_constant(EFST_MEMBER_CLUB_LV5);
+	export_constant(EFST_MEMBER_CLUB_LV6);
+	export_constant(EFST_MEMBER_CLUB_LV7);
+	export_constant(EFST_MEMBER_CLUB_LV8);
+	export_constant(EFST_MEMBER_CLUB_LV9);
+	export_constant(EFST_MEMBER_CLUB_LV10);
+
 	// Refine Pass
 	export_constant(EFST_REFINE_PASS_5);
 	export_constant(EFST_REFINE_PASS_6);

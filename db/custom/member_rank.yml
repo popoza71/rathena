@@ -1,0 +1,40 @@
+###########################################################################
+# Whispering Rain
+###########################################################################
+#
+#
+###########################################################################
+
+Header:
+  Type: MEMBER_RANK_DB
+  Version: 1
+
+Body:
+  - Level: 1
+    Point: 2500000
+    Icon: EFST_MEMBER_LV1
+    Script: |
+      bonus2 bExpAddRace,RC_All,5;
+      bonus2 bDropAddRace,RC_All,5;
+      bonus bStr,100;
+  - Level: 2
+    Point: 5000000
+    Icon: EFST_MEMBER_LV2
+    Script: |
+      bonus2 bExpAddRace,RC_All,10;
+      bonus2 bDropAddRace,RC_All,10;
+      bonus bInt,100;
+  - Level: 3
+    Point: 7500000
+    Icon: EFST_MEMBER_LV3
+    Script: |
+      bonus2 bExpAddRace,RC_All,15;
+      bonus2 bDropAddRace,RC_All,15;
+      bonus bLuk,100;
+  - Level: 4
+    Point: 10000000
+    Icon: EFST_MEMBER_LV4
+    Script: |
+      bonus2 bExpAddRace,RC_All,20;
+      bonus2 bDropAddRace,RC_All,20;
+      bonus bDex,100;

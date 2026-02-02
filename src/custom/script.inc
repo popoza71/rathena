@@ -17,3 +17,15 @@
 //	script_pushint(st,1);
 //	return 0;
 //}
+
+BUILDIN_FUNC(recal_status){
+	map_session_data *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushint(st,0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	status_calc_pc(sd,SCO_FORCE);
+	return SCRIPT_CMD_SUCCESS;
+}

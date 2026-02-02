@@ -1,0 +1,54 @@
+###########################################################################
+# Whispering Rain
+###########################################################################
+#
+#
+###########################################################################
+
+Header:
+  Type: MEMBER_CLUB_DB
+  Version: 1
+
+Body:
+  - Level: 1
+    Point: 10000
+    Icon: EFST_MEMBER_CLUB_LV1
+    Script: |
+      bonus2 bDropAddRace,RC_ALL,3;
+      bonus2 bExpAddRace,RC_ALL,3;
+      bonus bAddMaxWeight,1000;
+  - Level: 2
+    Point: 25000
+    Icon: EFST_MEMBER_CLUB_LV2
+    Script: |
+      bonus2 bDropAddRace,RC_ALL,6;
+      bonus2 bExpAddRace,RC_ALL,6;
+      bonus bAddMaxWeight,2000;
+  - Level: 3
+    Point: 50000
+    Icon: EFST_MEMBER_CLUB_LV3
+    Script: |
+      bonus2 bDropAddRace,RC_ALL,10;
+      bonus2 bExpAddRace,RC_ALL,10;
+      bonus bAddMaxWeight,3000;
+  - Level: 4
+    Point: 100000
+    Icon: EFST_MEMBER_CLUB_LV4
+    Script: |
+      bonus2 bDropAddRace,RC_ALL,15;
+      bonus2 bExpAddRace,RC_ALL,15;
+      bonus bAddMaxWeight,5000;
+  - Level: 5
+    Point: 200000
+    Icon: EFST_MEMBER_CLUB_LV5
+    Script: |
+      bonus2 bDropAddRace,RC_ALL,20;
+      bonus2 bExpAddRace,RC_ALL,20;
+      bonus bAddMaxWeight,10000;
+  - Level: 6
+    Point: 500000
+    Icon: EFST_MEMBER_CLUB_LV6
+    Script: |
+      bonus2 bDropAddRace,RC_ALL,25;
+      bonus2 bExpAddRace,RC_ALL,25;
+      bonus bAddMaxWeight,15000;

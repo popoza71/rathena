@@ -27,6 +27,8 @@ struct s_elemental_data;
 struct npc_data;
 class status_change;
 
+extern std::vector<int16> member_rank_level;
+extern std::vector<int16> member_club_level;
 extern std::vector<int> mobs_no_card;
 
 /**
@@ -3020,6 +3022,18 @@ enum efst_type : int16{
 	/* vip state */
 	EFST_VIPSTATE = 2002,
 
+	//Member Rank
+	EFST_MEMBER_LV1 = 2106,
+	EFST_MEMBER_LV2,
+	EFST_MEMBER_LV3,
+	EFST_MEMBER_LV4,
+	EFST_MEMBER_LV5,
+	EFST_MEMBER_LV6,
+	EFST_MEMBER_LV7,
+	EFST_MEMBER_LV8,
+	EFST_MEMBER_LV9,
+	EFST_MEMBER_LV10,
+
 	// Party Bonus
 	EFST_PARTY_SWORDMAN = 2150,
 	EFST_PARTY_ACOLYTE,
@@ -3081,6 +3095,19 @@ enum efst_type : int16{
 	EFST_GUM_EQUIP2 = 2225,
 	EFST_GUM_CARD2 = 2226,
 
+	//Member Club
+	EFST_MEMBER_CLUB_LV1 = 2261,
+	EFST_MEMBER_CLUB_LV2,
+	EFST_MEMBER_CLUB_LV3,
+	EFST_MEMBER_CLUB_LV4,
+	EFST_MEMBER_CLUB_LV5,
+	EFST_MEMBER_CLUB_LV6,
+	EFST_MEMBER_CLUB_LV7,
+	EFST_MEMBER_CLUB_LV8,
+	EFST_MEMBER_CLUB_LV9,
+	EFST_MEMBER_CLUB_LV10,
+
+	//custom buff
 	EFST_CUSTOM_BUFF_1 = 2301,
 	EFST_CUSTOM_BUFF_2,
 	EFST_CUSTOM_BUFF_3,
@@ -3970,5 +3997,70 @@ void status_readdb( bool reload = false );
 void do_init_status(void);
 void do_final_status(void);
 #endif /* ONLY_CONSTANTS */
+
+//member rank
+struct s_member_rank {
+	int16 level;
+	uint64 point;
+	efst_type icon;
+	struct script_code* script;	//Default script for everything.
+
+	~s_member_rank() {
+		if (this->script) {
+			script_free_code(this->script);
+			this->script = nullptr;
+		}
+	}
+};
+
+class MemberRankDatabase : public TypesafeYamlDatabase<int16, s_member_rank> {
+public:
+	MemberRankDatabase() : TypesafeYamlDatabase("MEMBER_RANK_DB", 1) {
+
+	}
+
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() override;
+};
+
+extern MemberRankDatabase member_rank_db;
+
+void member_rank_buff(map_session_data* sd);
+void member_rank_remove_old_effect(map_session_data* sd);
+
+
+//member club
+struct s_member_club {
+	int16 level;
+	uint64 point;
+	efst_type icon;
+	struct script_code* script;	//Default script for everything.
+
+	~s_member_club() {
+		if (this->script) {
+			script_free_code(this->script);
+			this->script = nullptr;
+		}
+	}
+};
+
+class MemberRankClubDatabase : public TypesafeYamlDatabase<int16, s_member_club> {
+public:
+	MemberRankClubDatabase() : TypesafeYamlDatabase("MEMBER_CLUB_DB", 1) {
+
+	}
+
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() override;
+};
+
+extern MemberRankClubDatabase member_club_db;
+
+void member_club_buff(map_session_data* sd);
+void member_club_remove_old_effect(map_session_data* sd);
+
+
 
 #endif /* STATUS_HPP */

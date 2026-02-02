@@ -48,6 +48,9 @@ enum e_regen {
 	RGN_SSP  = 0x08,
 };
 
+std::vector<int16> member_rank_level;
+std::vector<int16> member_club_level;
+
 static struct status_data dummy_status;
 
 /// Delayed Status Structure
@@ -3985,6 +3988,8 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 	}
 
 	custom_buff(sd);
+	member_rank_buff(sd);
+	member_club_buff(sd);
 
 	// Parse equipment
 	for (i = 0; i < EQI_MAX; i++) {
@@ -16744,6 +16749,441 @@ static bool status_readdb_mob_no_card(char* fields[], size_t columns, size_t cur
 	return true;
 }
 
+//member rank
+const std::string MemberRankDatabase::getDefaultLocation() {
+	return std::string(db_path) + "/custom/member_rank.yml";
+}
+
+/**
+ * Reads and parses an entry from the member_rank.
+ * @param node: YAML node containing the entry.
+ * @return count of successfully parsed rows
+ */
+uint64 MemberRankDatabase::parseBodyNode(const ryml::NodeRef& node) {
+
+	if (!this->nodesExist(node, { "Level","Point" }))
+		return 0;
+
+	int16 level;
+
+	if (!this->asInt16(node, "Level", level))
+		return 0;
+
+	std::shared_ptr<s_member_rank> MemberRank = this->find(level);
+	bool exists = MemberRank != nullptr;
+
+	if (!exists) {
+		if (!this->nodesExist(node, { "Level","Point" }))
+			return 0;
+
+		MemberRank = std::make_shared<s_member_rank>();
+		MemberRank->level = level;
+	}
+
+	if (this->nodeExists(node, "Point")) {
+		int64 point;
+
+		if (!this->asInt64(node, "Point", point))
+			return 0;
+
+		if (point < 0) {
+			this->invalidWarning(node["Point"], "Point %d is out of bounds, defaulting to 0.\n", point);
+			point = 0;
+		}
+
+		MemberRank->point = point;
+	}
+	else {
+		if (!exists)
+			MemberRank->point = 0;
+	}
+
+	if (this->nodeExists(node, "Icon")) {
+		std::string icon_name;
+
+		if (!this->asString(node, "Icon", icon_name))
+			return 0;
+
+		int64 constant;
+
+		if (!script_get_constant(icon_name.c_str(), &constant)) {
+			this->invalidWarning(node["Icon"], "Icon %s is invalid, defaulting to EFST_BLANK.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		if (constant < EFST_BLANK || constant >= EFST_MAX) {
+			this->invalidWarning(node["Icon"], "Icon %s is out of bounds, defaulting to EFST_BLANK.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		MemberRank->icon = static_cast<efst_type>(constant);
+	}
+	else {
+		if (!exists)
+			MemberRank->icon = EFST_BLANK;
+	}
+
+	if (this->nodeExists(node, "Script")) {
+		std::string script;
+
+		if (!this->asString(node, "Script", script))
+			return 0;
+
+		if (MemberRank->script) {
+			script_free_code(MemberRank->script);
+			MemberRank->script = nullptr;
+		}
+
+		MemberRank->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+	}
+	else {
+		if (!exists)
+			MemberRank->script = nullptr;
+	}
+
+	if (!exists) {
+		this->put(MemberRank->level, MemberRank);
+		member_rank_level.push_back(MemberRank->level);
+	}
+
+	return 1;
+}
+
+MemberRankDatabase member_rank_db;
+
+void MemberRankDatabase::loadingFinished() {
+
+	// sort by level
+	std::sort(member_rank_level.begin(), member_rank_level.end());
+
+	TypesafeYamlDatabase::loadingFinished();
+}
+
+static void member_rank_clean_old_bonus()
+{
+	struct s_mapiterator* iter;
+	map_session_data* sd;
+
+	iter = mapit_geteachpc();
+	for (sd = (map_session_data*)mapit_first(iter); mapit_exists(iter); sd = (map_session_data*)mapit_next(iter)) {
+		member_rank_remove_old_effect(sd);
+	}
+
+	mapit_free(iter);
+}
+
+static void member_rank_apply_bouns()
+{
+	struct s_mapiterator* iter;
+	map_session_data* sd;
+
+	iter = mapit_geteachpc();
+	for (sd = (map_session_data*)mapit_first(iter); mapit_exists(iter); sd = (map_session_data*)mapit_next(iter)) {
+		status_calc_pc(sd, SCO_NONE);
+	}
+
+	mapit_free(iter);
+}
+
+void member_rank_buff(map_session_data* sd) {
+
+	if (sd == nullptr)
+		return;
+
+	int amount = 0;
+	int level = 0;
+
+	SqlStmt stmt{ *mmysql_handle };
+
+	if (SQL_ERROR == stmt.Prepare("SELECT `member_point` FROM `_member_rank` WHERE `account_id` = ? LIMIT 1")) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	int account_id = sd->status.account_id;
+	if (SQL_ERROR == stmt.BindParam(0, SQLDT_INT32, &account_id, sizeof(account_id))) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	if (SQL_ERROR == stmt.Execute()) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	int member_point = 0;
+	if (SQL_ERROR == stmt.BindColumn(0, SQLDT_INT32, &member_point, sizeof(member_point), nullptr, nullptr)) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	if (SQL_SUCCESS == stmt.NextRow())
+		amount = member_point;
+
+	for (int i = 0; i < member_rank_db.size(); i++) {
+		std::shared_ptr<s_member_rank> MemberBuff = member_rank_db.find(member_rank_level[i]);
+
+		if (MemberBuff == nullptr)
+			continue;
+
+		if (amount >= MemberBuff->point)
+			level = MemberBuff->level;
+
+		if (MemberBuff->icon != EFST_BLANK)
+			clif_status_load(sd, MemberBuff->icon, 0);
+	}
+
+	if (!level)
+		return;
+
+	std::shared_ptr<s_member_rank> MemberBuff = member_rank_db.find(level);
+
+	if (MemberBuff == nullptr)
+		return;
+
+	if (MemberBuff->icon != EFST_BLANK)
+		clif_status_load(sd, MemberBuff->icon, 1);
+
+	if (MemberBuff->script)
+		run_script(MemberBuff->script, 0, sd->id, 0);
+}
+
+void member_rank_remove_old_effect(map_session_data* sd) {
+
+	if (sd == nullptr)
+		return;
+
+	for (const auto& entry : member_rank_db) {
+		std::shared_ptr<s_member_rank> clean_bonus = entry.second;
+
+		if (clean_bonus == nullptr)
+			continue;
+
+		if (clean_bonus->icon != EFST_BLANK)
+			clif_status_load(sd, clean_bonus->icon, 0);
+	}
+}
+
+
+// puppy member club
+
+const std::string MemberRankClubDatabase::getDefaultLocation() {
+	return std::string(db_path) + "/custom/member_club.yml";
+}
+
+/**
+ * Reads and parses an entry from the member_club.
+ * @param node: YAML node containing the entry.
+ * @return count of successfully parsed rows
+ */
+uint64 MemberRankClubDatabase::parseBodyNode(const ryml::NodeRef& node) {
+
+	if (!this->nodesExist(node, { "Level","Point" }))
+		return 0;
+
+	int16 level;
+
+	if (!this->asInt16(node, "Level", level))
+		return 0;
+
+	std::shared_ptr<s_member_club> MemberRankClub = this->find(level);
+	bool exists = MemberRankClub != nullptr;
+
+	if (!exists) {
+		if (!this->nodesExist(node, { "Level","Point" }))
+			return 0;
+
+		MemberRankClub = std::make_shared<s_member_club>();
+		MemberRankClub->level = level;
+	}
+
+	if (this->nodeExists(node, "Point")) {
+		int64 point;
+
+		if (!this->asInt64(node, "Point", point))
+			return 0;
+
+		if (point < 0) {
+			this->invalidWarning(node["Point"], "Point %d is out of bounds, defaulting to 0.\n", point);
+			point = 0;
+		}
+
+		MemberRankClub->point = point;
+	}
+	else {
+		if (!exists)
+			MemberRankClub->point = 0;
+	}
+
+	if (this->nodeExists(node, "Icon")) {
+		std::string icon_name;
+
+		if (!this->asString(node, "Icon", icon_name))
+			return 0;
+
+		int64 constant;
+
+		if (!script_get_constant(icon_name.c_str(), &constant)) {
+			this->invalidWarning(node["Icon"], "Icon %s is invalid, defaulting to EFST_BLANK.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		if (constant < EFST_BLANK || constant >= EFST_MAX) {
+			this->invalidWarning(node["Icon"], "Icon %s is out of bounds, defaulting to EFST_BLANK.\n", icon_name.c_str());
+			constant = EFST_BLANK;
+		}
+
+		MemberRankClub->icon = static_cast<efst_type>(constant);
+	}
+	else {
+		if (!exists)
+			MemberRankClub->icon = EFST_BLANK;
+	}
+
+	if (this->nodeExists(node, "Script")) {
+		std::string script;
+
+		if (!this->asString(node, "Script", script))
+			return 0;
+
+		if (MemberRankClub->script) {
+			script_free_code(MemberRankClub->script);
+			MemberRankClub->script = nullptr;
+		}
+
+		MemberRankClub->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["Script"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
+	}
+	else {
+		if (!exists)
+			MemberRankClub->script = nullptr;
+	}
+
+	if (!exists) {
+		this->put(MemberRankClub->level, MemberRankClub);
+		member_club_level.push_back(MemberRankClub->level);
+	}
+
+	return 1;
+}
+
+MemberRankClubDatabase member_club_db;
+
+void MemberRankClubDatabase::loadingFinished() {
+
+	// sort by level
+	std::sort(member_club_level.begin(), member_club_level.end());
+
+	TypesafeYamlDatabase::loadingFinished();
+}
+
+static void member_club_clean_old_bonus()
+{
+	struct s_mapiterator* iter;
+	map_session_data* sd;
+
+	iter = mapit_geteachpc();
+	for (sd = (map_session_data*)mapit_first(iter); mapit_exists(iter); sd = (map_session_data*)mapit_next(iter)) {
+		member_club_remove_old_effect(sd);
+	}
+
+	mapit_free(iter);
+}
+
+static void member_club_apply_bouns()
+{
+	struct s_mapiterator* iter;
+	map_session_data* sd;
+
+	iter = mapit_geteachpc();
+	for (sd = (map_session_data*)mapit_first(iter); mapit_exists(iter); sd = (map_session_data*)mapit_next(iter)) {
+		status_calc_pc(sd, SCO_NONE);
+	}
+
+	mapit_free(iter);
+}
+
+void member_club_buff(map_session_data* sd) {
+
+	if (sd == nullptr)
+		return;
+
+	int amount = 0;
+	int level = 0;
+
+	SqlStmt stmt{ *mmysql_handle };
+
+	if (SQL_ERROR == stmt.Prepare("SELECT `member_point` FROM `_member_club` WHERE `account_id` = ? LIMIT 1")) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	int account_id = sd->status.account_id;
+	if (SQL_ERROR == stmt.BindParam(0, SQLDT_INT32, &account_id, sizeof(account_id))) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	if (SQL_ERROR == stmt.Execute()) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	int member_point = 0;
+	if (SQL_ERROR == stmt.BindColumn(0, SQLDT_INT32, &member_point, sizeof(member_point), nullptr, nullptr)) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	if (SQL_SUCCESS == stmt.NextRow())
+		amount = member_point;
+
+	for (int i = 0; i < member_club_db.size(); i++) {
+		std::shared_ptr<s_member_club> MemberClubBuff = member_club_db.find(member_club_level[i]);
+
+		if (MemberClubBuff == nullptr)
+			continue;
+
+		if (amount >= MemberClubBuff->point)
+			level = MemberClubBuff->level;
+
+		if (MemberClubBuff->icon != EFST_BLANK)
+			clif_status_load(sd, MemberClubBuff->icon, 0);
+	}
+
+	if (!level)
+		return;
+
+	std::shared_ptr<s_member_club> MemberClubBuff = member_club_db.find(level);
+
+	if (MemberClubBuff == nullptr)
+		return;
+
+	if (MemberClubBuff->icon != EFST_BLANK)
+		clif_status_load(sd, MemberClubBuff->icon, 1);
+
+	if (MemberClubBuff->script)
+		run_script(MemberClubBuff->script, 0, sd->id, 0);
+}
+
+void member_club_remove_old_effect(map_session_data* sd) {
+
+	if (sd == nullptr)
+		return;
+
+	for (const auto& entry : member_club_db) {
+		std::shared_ptr<s_member_club> clean_bonus = entry.second;
+
+		if (clean_bonus == nullptr)
+			continue;
+
+		if (clean_bonus->icon != EFST_BLANK)
+			clif_status_load(sd, clean_bonus->icon, 0);
+	}
+}
+// puppy member club
+
+
+
 /**
  * Sets defaults in tables and starts read db functions
  * sv_readdb reads the file, outputting the information line-by-line to
@@ -16764,6 +17204,14 @@ void status_readdb( bool reload ){
 
 	if( reload ){
 		mobs_no_card = {};
+	}
+
+	if (reload) {
+		member_rank_level = {};
+	}
+
+	if (reload) {
+		member_club_level = {};
 	}
 
 	// read databases
@@ -16791,19 +17239,27 @@ void status_readdb( bool reload ){
 	}
 
 	if( reload ){
+		member_rank_clean_old_bonus();
+		member_club_clean_old_bonus();
 		size_fix_db.reload();
 		refine_db.reload();
 		status_db.reload();
 		enchantgrade_db.reload();
 		custom_buff_db.reload();
+		member_rank_db.reload();
+		member_club_db.reload();
 	}else{
 		size_fix_db.load();
 		refine_db.load();
 		status_db.load();
 		enchantgrade_db.load();
 		custom_buff_db.load();
+		member_rank_db.load();
+		member_club_db.load();
 	}
 	elemental_attribute_db.load();
+	member_rank_apply_bouns();
+	member_club_apply_bouns();
 }
 
 /**
@@ -16832,4 +17288,8 @@ void do_final_status(void) {
 	elemental_attribute_db.clear();
 	delay_status.clear();
 	mobs_no_card = {};
+	member_rank_db.clear();
+	member_rank_level = {};
+	member_club_db.clear();
+	member_club_level = {};
 }
