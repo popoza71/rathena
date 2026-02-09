@@ -16077,6 +16077,15 @@ bool skill_check_condition_castend( map_session_data& sd, uint16 skill_id, uint1
 		return true;
 	}
 
+	// Asura cast cancel options
+	if (skill_id == MO_EXTREMITYFIST &&
+		((sd.spiritball == 0 && battle_config.asura_absorb_cast_cancel) ||
+		(!sd.sc.getSCE(SC_EXPLOSIONSPIRITS) && battle_config.asura_dispell_cast_cancel)))
+	{
+		clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+		return false;
+	}
+
 	switch( sd.menuskill_id ) { // Cast start or cast end??
 		case AM_PHARMACY:
 			switch( skill_id ) {

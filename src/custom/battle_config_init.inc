@@ -49,13 +49,15 @@
 	{ "trickdead_noexp",						&battle_config.trickdead_noexp,					1,      0,      1, },
 
 
-	/*
- 	////Max Trap [Hyroshima]
-	//{ "skill_max_trap",						 &battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
-	//{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
-
 	{ "asura_absorb_cast_cancel",				&battle_config.asura_absorb_cast_cancel,        1,      0,      1, },
 	{ "asura_dispell_cast_cancel",				&battle_config.asura_dispell_cast_cancel,       1,      0,      1, },
+
+
+	/*
+ 	////Max Trap [Hyroshima]
+	//{ "skill_max_trap",						&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
+	//{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
+
 	{ "block_body_relocation_ankle",			&battle_config.block_body_relocation_ankle,		1,      0,      1, },
 	{ "block_body_relocation_spiderweb",		&battle_config.block_body_relocation_spiderweb, 1,      0,      1, },
 	//{ "block_body_relocation_confine",		&battle_config.block_body_relocation_confine,   1,      0,      1, },
@@ -84,5 +86,4 @@
 	//{ "shadow_weapon_view",					&battle_config.shadow_weapon_view,				1,      0,      1, },	//puppy
 	//{ "shadow_weapon_allow_empty_hand",		&battle_config.shadow_weapon_allow_empty_hand,	0,		0,		1 },	//puppy
 	//{ "shadow_weapon_fallback",				&battle_config.shadow_weapon_fallback,			0,		0,		1, },	//puppy
-	//{ "blacksmith_downgrade",					&battle_config.blacksmith_downgrade,			0,		0,		1, },	//puppy
 	*/

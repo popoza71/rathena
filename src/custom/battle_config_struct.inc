@@ -47,16 +47,16 @@
 	int32 refine_costume_pass_system_enable;
 	int32 costume_head_refine_def;	// puppy cos refine
 
-
 	int32 trickdead_noexp;
+
+	int32 asura_absorb_cast_cancel;
+	int32 asura_dispell_cast_cancel;
 
 	/*
  	////Max Trap [Hyroshima]
 	//int skill_max_trap;
 	//int global_max_trap;
 
-	int32 asura_absorb_cast_cancel;
-	int32 asura_dispell_cast_cancel;
 	int32 block_body_relocation_ankle;
 	int32 block_body_relocation_spiderweb;
 	//int32 block_body_relocation_confine;
@@ -85,5 +85,4 @@
 	//int32 shadow_weapon_view;
 	//int32 shadow_weapon_allow_empty_hand;
 	//int32 shadow_weapon_fallback;
-	//int32 blacksmith_downgrade;
 	*/
