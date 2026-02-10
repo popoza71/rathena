@@ -5684,7 +5684,10 @@ int32 skill_castend_damage_id (block_list* src, block_list *bl, uint16 skill_id,
 					// Recursive call
 					map_foreachinallarea(skill_area_sub, bl->m, max(min_x,tx-1), max(min_y,ty-1), min(max_x,tx+1), min(max_y,ty+1), splash_target(src), src, skill_id, skill_lv, tick, (flag|BCT_ENEMY)+1, skill_castend_damage_id);
 					// Self-collision
+					/*
 					if(bl->x >= min_x && bl->x <= max_x && bl->y >= min_y && bl->y <= max_y)
+					*/
+					if (bl->x >= min_x && bl->x <= max_x && bl->y >= min_y && bl->y <= max_y && battle_config.bowling_bash_multi_hit) //[puppy]
 						skill_attack(BF_WEAPON,src,src,bl,skill_id,skill_lv,tick,(flag&0xFFF)>0?SD_ANIMATION|count:count);
 					break;
 				}
