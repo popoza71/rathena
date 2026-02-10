@@ -2065,9 +2065,16 @@ int32 skill_additional_effect( block_list* src, block_list *bl, uint16 skill_id,
 			if (skill == PF_SPIDERWEB) //Special case, due to its nature of coding.
 				type = CAST_GROUND;
 #ifndef RENEWAL
+			/*
 			else if( skill == AS_SONICBLOW ){
 				// Special case, Sonic Blow autospell should stop the player attacking.
 				unit_stop_attack( sd );
+			}
+			*/
+			else if (skill == AS_SONICBLOW) {
+				if (battle_config.sonic_blow_autoattack) {
+					unit_stop_attack(sd);
+				}
 			}
 #endif
 

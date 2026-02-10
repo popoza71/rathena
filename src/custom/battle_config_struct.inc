@@ -58,6 +58,7 @@
 	int32 block_high_jump_ankle;
 	int32 block_high_jump_spiderweb;
 	int32 blitz_damage_divide;
+	int32 sonic_blow_autoattack;
 
 	/*
  	////Max Trap [Hyroshima]
@@ -66,8 +67,6 @@
 	int32 endure_hit;
 	int32 gank_percent;
 
-
-	int32 sonic_blow_autoattack;
 	int32 bowling_bash_multi_hit;
 	int32 bowling_bash_min_count_re;
 	int32 bowling_bash_max_count_re;
