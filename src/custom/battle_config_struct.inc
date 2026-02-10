@@ -60,7 +60,7 @@
 	int32 blitz_damage_divide;
 	int32 sonic_blow_autoattack;
 	int32 bowling_bash_multi_hit;
-
+	int32 berserk_provork_lv;
 	/*
  	////Max Trap [Hyroshima]
 	//int skill_max_trap;
@@ -74,8 +74,6 @@
 	int32 sonic_acceleration_dmg;
 	int32 backstab_dagger_hit;
 	int32 pvp_mvp_map;
-	//int32 broadcast_sound;
-	int32 berserk_provork_lv;
 	int32 bowlingbash_reduce_dmg_not_2hsw;
 	//int32 sub_ele_capping;
 	int32 sanctuary_disable;

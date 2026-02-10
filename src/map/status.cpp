@@ -14409,7 +14409,10 @@ TIMER_FUNC(status_change_timer){
 		else {
 			// Start infinite provoke granted by auto berserk
 			if (status->hp <= status->max_hp / 4)
+				/*
 				sc_start4(bl, bl, SC_PROVOKE, 100, 10, 0, 0, 1, INFINITE_TICK);
+				*/
+				sc_start4(bl, bl, SC_PROVOKE, 100, battle_config.berserk_provork_lv, 0, 0, 1, INFINITE_TICK);
 		}
 		// Repeat check every interval
 		sc_timer_next(100 + tick);

@@ -59,7 +59,7 @@
 	{ "blitz_damage_divide",					&battle_config.blitz_damage_divide,				1,      0,      1, },
 	{ "sonic_blow_autoattack",					&battle_config.sonic_blow_autoattack,			1,      0,      1, },
 	{ "bowling_bash_multi_hit",					&battle_config.bowling_bash_multi_hit,			1,      0,      1, },
-
+	{ "berserk_provork_lv",						&battle_config.berserk_provork_lv,				10,     0,      INT_MAX, },	//puppy
 	/*
  	////Max Trap [Hyroshima]
 	//{ "skill_max_trap",						&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
@@ -74,8 +74,6 @@
 	{ "sonic_acceleration_dmg",					&battle_config.sonic_acceleration_dmg,			90,      0,      INT_MAX, },	//puppy
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
 	{ "pvp_mvp_map",							&battle_config.pvp_mvp_map,						1,      0,      1, },
-	//{ "broadcast_sound",						&battle_config.broadcast_sound,					1,      0,      1, },
-	{ "berserk_provork_lv",						&battle_config.berserk_provork_lv,				10,     0,      INT_MAX, },	//puppy
 	{ "bowlingbash_reduce_dmg_not_2hsw",		&battle_config.bowlingbash_reduce_dmg_not_2hsw,	100,     0,     INT_MAX, },	//puppy
 	//{ "sub_ele_capping",						&battle_config.sub_ele_capping,					100,     0,     INT_MAX, },	//puppy
 	{ "sanctuary_disable",						&battle_config.sanctuary_disable,				1,      0,      1, },	//puppy
