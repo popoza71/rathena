@@ -4,6 +4,8 @@
 #include "highjump.hpp"
 
 #include "map/clif.hpp"
+#include "map/pc.hpp"
+#include "map/status.hpp"
 #include "map/unit.hpp"
 
 SkillHighJump::SkillHighJump() : SkillImpl(TK_HIGHJUMP) {
@@ -12,6 +14,17 @@ SkillHighJump::SkillHighJump() : SkillImpl(TK_HIGHJUMP) {
 void SkillHighJump::castendNoDamageId(block_list *src, block_list *target, uint16 skill_lv, t_tick tick, int32 &flag) const {
 	int32 x, y, dir = unit_getdir(src);
 	map_data *mapdata = map_getmapdata(src->m);
+
+
+	map_session_data* sd = map_id2sd(src->id);
+	if (sd != nullptr &&
+		((sd->sc.getSCE(SC_ANKLE) && battle_config.block_high_jump_ankle) ||
+			(sd->sc.getSCE(SC_SPIDERWEB) && battle_config.block_high_jump_spiderweb)))
+	{
+		clif_skill_fail(*sd, getSkillId(), USESKILL_FAIL_LEVEL, 0);
+		return;
+	}
+
 
 	// Fails on noteleport maps, except for GvG and BG maps [Skotlex]
 	if (mapdata->getMapFlag(MF_NOTELEPORT) && !(mapdata->getMapFlag(MF_BATTLEGROUND) || mapdata_flag_gvg(mapdata))) {

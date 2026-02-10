@@ -11672,6 +11672,14 @@ int32 skill_castend_pos2(block_list* src, int32 x, int32 y, uint16 skill_id, uin
 		return 0; // not to consume item.
 
 	case MO_BODYRELOCATION:
+
+		// Body Relocation cannot be used under Ankle or Spider Web. [Puppy]
+		if (sd && ((sd->sc.getSCE(SC_ANKLE) && battle_config.block_body_relocation_ankle) || (sd->sc.getSCE(SC_SPIDERWEB) && battle_config.block_body_relocation_spiderweb)))
+		{
+			clif_skill_fail(*sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+			return false;
+		}
+
 		if (unit_movepos(src, x, y, 2, 1)) {
 #if PACKETVER >= 20111005
 			clif_snap(src, src->x, src->y);

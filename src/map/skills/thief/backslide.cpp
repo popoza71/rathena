@@ -6,12 +6,25 @@
 #include "map/clif.hpp"
 #include "map/status.hpp"
 #include "map/unit.hpp"
+#include "map/pc.hpp"
 
 SkillBackSlide::SkillBackSlide() : SkillImpl(TF_BACKSLIDING) {
 }
 
 void SkillBackSlide::castendNoDamageId(block_list *src, block_list *bl, uint16 skill_lv, t_tick tick, int32 &flag) const {
 	//This is the correct implementation as per packet logging information. [Skotlex]
+
+
+	map_session_data* sd = map_id2sd(src->id);
+
+	if (sd != nullptr &&
+		((sd->sc.getSCE(SC_ANKLE) && battle_config.block_back_slide_ankle) ||
+			(sd->sc.getSCE(SC_SPIDERWEB) && battle_config.block_back_slide_spiderweb)))
+	{
+		clif_skill_fail(*sd, getSkillId(), USESKILL_FAIL_LEVEL, 0);
+		return;
+	}
+
 
 	// Backsliding makes you immune to being stopped for 200ms, but only if you don't have the endure effect yet
 	if (unit_data *ud = unit_bl2ud(bl); ud != nullptr && !status_isendure(*bl, tick, true))
