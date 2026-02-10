@@ -56,6 +56,8 @@
 	{ "block_back_slide_spiderweb",				&battle_config.block_back_slide_spiderweb,      1,      0,      1, },
 	{ "block_high_jump_ankle",					&battle_config.block_high_jump_ankle,			1,      0,      1, },
 	{ "block_high_jump_spiderweb",				&battle_config.block_high_jump_spiderweb,       1,      0,      1, },
+	{ "blitz_damage_divide",					&battle_config.blitz_damage_divide,				1,      0,      1, },
+
 
 	/*
  	////Max Trap [Hyroshima]
@@ -65,7 +67,6 @@
 	{ "endure_hit",								&battle_config.endure_hit,						7,      0,      INT_MAX, },
 	{ "gank_percent",							&battle_config.gank_percent,					0,		0,		100 },	//puppy
 	//{ "magnus_all_element",					&battle_config.magnus_all_element,				1,      0,      1,				}, //puppy
-	{ "blitz_damage_divide",					&battle_config.blitz_damage_divide,				1,      0,      1, },
 	{ "sonic_blow_autoattack",					&battle_config.sonic_blow_autoattack,			1,      0,      1, },
 	{ "bowling_bash_multi_hit",					&battle_config.bowling_bash_multi_hit,			1,      0,      1, },
 	{ "bowling_bash_min_count_re",				&battle_config.bowling_bash_min_count_re,		2,      0,      INT_MAX, },	//puppy

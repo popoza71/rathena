@@ -8636,7 +8636,8 @@ struct Damage battle_calc_misc_attack(block_list *src,block_list *target,uint16 
 				md.damage = skill_lv * 20 + skill * 6 + ((sstatus->agi / 2) *2) + ((sstatus->dex / 10) *2);
 #else
 				md.damage = (sstatus->dex / 10 + sstatus->int_ / 2 + skill * 3 + 40) * 2;
-				if(mflag > 1) //Autocasted Blitz
+				//if(mflag > 1) //Autocasted Blitz
+				if (mflag > 1 && battle_config.blitz_damage_divide) //Autocasted Blitz
 					nk.set(NK_SPLASHSPLIT);
 #endif
 				if (skill_id == SN_FALCONASSAULT) {
