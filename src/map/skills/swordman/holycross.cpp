@@ -16,7 +16,8 @@ void SkillHolyCross::calculateSkillRatio(const Damage* wd, const block_list* src
 	const map_session_data* sd = BL_CAST(BL_PC, src);
 
 	if(sd && sd->status.weapon == W_2HSPEAR)
-		base_skillratio += 70 * skill_lv;
+		//base_skillratio += 70 * skill_lv;
+		base_skillratio += battle_config.holy_cross_2spear_weapon * skill_lv; //puppy
 	else
 #endif
 		base_skillratio += 35 * skill_lv;

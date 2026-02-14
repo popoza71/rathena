@@ -72,14 +72,15 @@
 	int32 skill_max_trap;
 	int32 global_max_trap;
 
-	/*
+	//re-newal skill edit
+	int32 sanctuary_disable;
 	int32 bowling_bash_min_count_re;
 	int32 bowling_bash_max_count_re;
 	int32 holy_cross_2spear_weapon;
 	int32 sonic_acceleration_dmg;
 	int32 backstab_dagger_hit;
-	//int32 sub_ele_capping;
-	int32 sanctuary_disable;
+
+	/*
 	//int32 shadow_weapon_view;
 	//int32 shadow_weapon_allow_empty_hand;
 	//int32 shadow_weapon_fallback;

@@ -71,14 +71,17 @@
 	{ "skill_max_trap",							&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
 	{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
 
-	/*
+	//re-newal skill edit
+	{ "sanctuary_disable",						&battle_config.sanctuary_disable,				1,      0,      1, },	//puppy
 	{ "bowling_bash_min_count_re",				&battle_config.bowling_bash_min_count_re,		2,      0,      INT_MAX, },	//puppy
 	{ "bowling_bash_max_count_re",				&battle_config.bowling_bash_max_count_re,		4,      0,      INT_MAX, },	//puppy
 	{ "holy_cross_2spear_weapon",				&battle_config.holy_cross_2spear_weapon,		45,      0,      INT_MAX, },	//puppy
 	{ "sonic_acceleration_dmg",					&battle_config.sonic_acceleration_dmg,			90,      0,      INT_MAX, },	//puppy
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
-	//{ "sub_ele_capping",						&battle_config.sub_ele_capping,					100,     0,     INT_MAX, },	//puppy
-	{ "sanctuary_disable",						&battle_config.sanctuary_disable,				1,      0,      1, },	//puppy
+
+
+	/*
+	
 	//{ "shadow_weapon_view",					&battle_config.shadow_weapon_view,				1,      0,      1, },	//puppy
 	//{ "shadow_weapon_allow_empty_hand",		&battle_config.shadow_weapon_allow_empty_hand,	0,		0,		1 },	//puppy
 	//{ "shadow_weapon_fallback",				&battle_config.shadow_weapon_fallback,			0,		0,		1, },	//puppy

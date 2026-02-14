@@ -12263,7 +12263,9 @@ int32 skill_unit_onplace_timer(skill_unit *unit, block_list *bl, t_tick tick)
 				mob_data *md = BL_CAST(BL_MOB, bl);
 
 #ifdef RENEWAL
-				if (md && md->mob_id == MOBID_EMPERIUM)
+				//if (md && md->mob_id == MOBID_EMPERIUM)
+				//	break;
+				if ((md && md->mob_id == MOBID_EMPERIUM) && battle_config.sanctuary_disable)
 					break;
 #endif
 				if (md && status_get_class_(bl) == CLASS_BATTLEFIELD)

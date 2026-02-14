@@ -6165,7 +6165,8 @@ static void battle_calc_attack_post_defense(struct Damage* wd, block_list *src,b
 	switch (skill_id) {
 		case AS_SONICBLOW:
 			if(sd && pc_checkskill(sd,AS_SONICACCEL)>0)
-				ATK_ADDRATE(wd->damage, wd->damage2, 90);
+				//ATK_ADDRATE(wd->damage, wd->damage2, 90);
+				ATK_ADDRATE(wd->damage, wd->damage2, battle_config.sonic_acceleration_dmg); //puppy
 			break;
 	}
 #endif
@@ -6546,7 +6547,8 @@ static struct Damage initialize_weapon_data(const block_list* src, const block_l
 #ifdef RENEWAL
 			case RG_BACKSTAP:
 				if (sd && sd->status.weapon == W_DAGGER)
-					wd.div_ = 2;
+					//wd.div_ = 2;
+					wd.div_ = battle_config.backstab_dagger_hit; //puppy
 				break;
 			case MO_CHAINCOMBO:
 				if (sd && sd->status.weapon == W_KNUCKLE)
@@ -6601,9 +6603,11 @@ static struct Damage initialize_weapon_data(const block_list* src, const block_l
 			case KN_BOWLINGBASH:
 				if (sd && sd->status.weapon == W_2HSWORD) {
 					if (wd.miscflag >= 2 && wd.miscflag <= 3)
-						wd.div_ = 3;
+						//wd.div_ = 3;
+						wd.div_ = battle_config.bowling_bash_min_count_re;
 					else if (wd.miscflag >= 4)
-						wd.div_ = 4;
+						//wd.div_ = 4;
+						wd.div_ = battle_config.bowling_bash_max_count_re;
 				}
 				break;
 #endif
