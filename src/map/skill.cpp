@@ -1381,7 +1381,19 @@ int32 skill_additional_effect( block_list* src, block_list *bl, uint16 skill_id,
 					// Gank
 					if(dstmd && sd->status.weapon != W_BOW &&
 						(skill=pc_checkskill(sd,RG_SNATCHER)) > 0 &&
-						(skill*15 + 55) + pc_checkskill(sd,TF_STEAL)*10 > rnd()%1000) {
+						//(skill*15 + 55) + pc_checkskill(sd,TF_STEAL)*10 > rnd()%1000) {
+
+						//puppy edit gank
+						(
+							// ถ้า gank_percent > 0 ใช้เปอร์เซ็นต์ตายตัว
+							(battle_config.gank_percent > 0 && rnd() % 1000 < battle_config.gank_percent * 10)
+							||
+							// ถ้า gank_percent = 0 ใช้สูตรดั้งเดิม
+							(battle_config.gank_percent == 0 &&
+								((skill * 15 + 55) + pc_checkskill(sd, TF_STEAL) * 10 > rnd() % 1000))
+							)) {
+						//puppy edit gank
+
 						if(pc_steal_item(sd,bl,pc_checkskill(sd,TF_STEAL)))
 							clif_skill_nodamage(src,*bl,TF_STEAL,skill);
 						else

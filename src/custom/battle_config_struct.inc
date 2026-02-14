@@ -62,12 +62,12 @@
 	int32 bowling_bash_multi_hit;
 	int32 berserk_provork_lv;
 	int32 endure_hit;
+	int32 gank_percent;
 
 	/*
  	////Max Trap [Hyroshima]
 	//int skill_max_trap;
 	//int global_max_trap;
-	int32 gank_percent;
 
 	int32 bowling_bash_min_count_re;
 	int32 bowling_bash_max_count_re;
