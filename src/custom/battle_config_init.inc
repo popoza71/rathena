@@ -13,6 +13,9 @@
 	{ "check_stat_bypass",					&battle_config.check_stat_bypass,				0,		0,		1				},
 	{ "sc_buff_effect_boss",				&battle_config.sc_buff_effect_boss,				0,      0,      1,				},
 
+	{ "mod.mapmvp_enabled",                 &battle_config.mapmvp_enabled,                  1,      0,      1,              },
+	{ "mod.mapmvp_miniboss_enabled",        &battle_config.mapmvp_miniboss_enabled,         0,      0,      1,              },
+
 	{ "charm_refine_enable",				&battle_config.charm_refine_enable,	0,	0,	1,	},	// Charm Refine
 	{ "pet_refine_enable",					&battle_config.pet_refine_enable,	0,	0,	1,	},	// Pet Refine
 
@@ -68,13 +71,11 @@
 	{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
 
 	/*
-
 	{ "bowling_bash_min_count_re",				&battle_config.bowling_bash_min_count_re,		2,      0,      INT_MAX, },	//puppy
 	{ "bowling_bash_max_count_re",				&battle_config.bowling_bash_max_count_re,		4,      0,      INT_MAX, },	//puppy
 	{ "holy_cross_2spear_weapon",				&battle_config.holy_cross_2spear_weapon,		45,      0,      INT_MAX, },	//puppy
 	{ "sonic_acceleration_dmg",					&battle_config.sonic_acceleration_dmg,			90,      0,      INT_MAX, },	//puppy
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
-	{ "pvp_mvp_map",							&battle_config.pvp_mvp_map,						1,      0,      1, },
 	{ "bowlingbash_reduce_dmg_not_2hsw",		&battle_config.bowlingbash_reduce_dmg_not_2hsw,	100,     0,     INT_MAX, },	//puppy
 	//{ "sub_ele_capping",						&battle_config.sub_ele_capping,					100,     0,     INT_MAX, },	//puppy
 	{ "sanctuary_disable",						&battle_config.sanctuary_disable,				1,      0,      1, },	//puppy

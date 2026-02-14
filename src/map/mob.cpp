@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <common/cbasetypes.hpp>
@@ -69,6 +70,9 @@ const t_tick MOB_MAX_DELAY = 24 * 3600 * 1000;
 
 // holds Monster Spawn informations
 std::unordered_map<uint16, std::vector<spawn_info>> mob_spawn_data;
+
+/* [Royr] MVP PVP System - Exclude Mob List */
+std::unordered_set<int32> mapmvp_exclude_mobs;
 
 MobItemRatioDatabase mob_item_drop_ratio;
 
@@ -255,6 +259,119 @@ void mvptomb_destroy(mob_data *md) {
 
 	md->tomb_nid = 0;
 }
+
+/**
+ * [Royr] Check if a mob should trigger the MVP Map System
+ * @param md: Mob data
+ * @return true if mob should trigger MAPMVP, false otherwise
+ */
+bool mob_should_trigger_mapmvp(struct mob_data *md)
+{
+	if( md == nullptr || md->db == nullptr )
+		return false;
+
+	if( !battle_config.mapmvp_enabled )
+		return false;
+
+	e_mob_bosstype bosstype = md->db->get_bosstype();
+	if( bosstype == BOSSTYPE_NONE )
+		return false;
+
+	if( mapmvp_exclude_mobs.find(md->mob_id) != mapmvp_exclude_mobs.end() ) {
+		ShowDebug("mob_should_trigger_mapmvp: Mob %d (%s) is in Exclude List. Skipping 'MAPMVP'.\n", 
+			md->mob_id, md->name);
+		return false;
+	}
+	if( bosstype == BOSSTYPE_MINIBOSS ) {
+		if( !battle_config.mapmvp_miniboss_enabled) {
+			ShowDebug("mob_should_trigger_mapmvp: Mob %d (%s) is Mini-Boss but Mini-Boss is Disabled.\n", 
+				md->mob_id, md->name);
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * [Royr] Read MVP PVP exclude Mob List
+ * Format: One Mob ID Per Line 
+ */
+static void mob_read_mapmvp_exclude(void)
+{
+	FILE *fp;
+	char line[1024];
+	int32 count = 0;
+
+	mapmvp_exclude_mobs.clear();
+	const char* filename = "db/custom/mapmvp_exclude.txt";
+	fp = fopen(filename, "r");
+	if( fp == nullptr ) {
+		ShowWarning("mob_read_mapmvp_exclude: File not found '%s', no mobs will be excluded from MAPMVP.\n", filename);
+		return;
+	}
+	while (fgets(line, sizeof(line), fp)) {
+		char *ptr;
+		int32 mob_id;
+		if( (ptr = strchr(line, '\n')) != nullptr )
+			*ptr = '\0';
+		if( (ptr = strchr(line, '\r')) != nullptr )
+			*ptr = '\0';
+		if( line[0] == '\0' || line[0] == '/' || line[0] == '#' )
+			continue;
+		mob_id = atoi(line);
+		if( mob_id <= 0 ) {
+			ShowWarning("mob_read_mapmvp_exclude: Invalid mob ID '%s' in %s, skipping.\n", line, filename);
+			continue;
+		}
+		mapmvp_exclude_mobs.insert(mob_id);
+		count++;
+	}
+	fclose(fp);
+	if( count > 0 )
+		ShowStatus("Done reading '" CL_WHITE "%d" CL_RESET "' entries in '" CL_WHITE "%s" CL_RESET "'.\n", count, filename);
+}
+
+/**
+ * [Royr] Reload MVP PVP exclude Mob List (for @reloadmvpmaps)
+ * Shows detailed information about excluded mobs
+ */
+void mob_reload_mapmvp_exclude(void)
+{
+	size_t old_count = mapmvp_exclude_mobs.size();
+	mob_read_mapmvp_exclude();
+	size_t new_count = mapmvp_exclude_mobs.size();
+
+	ShowMessage("============================================================\n");
+	ShowMessage("[MVP PVP] Exclude List Reload Summary\n");
+	ShowMessage("============================================================\n");
+	if( old_count != new_count )
+		ShowMessage("Entries Changed: %zu -> %zu\n", old_count, new_count);
+	else
+		ShowMessage("Total Entries: %zu (Unchanged)\n", new_count);
+	ShowMessage("------------------------------------------------------------\n");
+	ShowMessage("%-10s %-30s %-15s\n", "Mob ID", "Mob Name", "Boss Type");
+	ShowMessage("------------------------------------------------------------\n");
+	for (const uint32& mob_id : mapmvp_exclude_mobs) {
+		std::shared_ptr<s_mob_db> mobdb = mob_db.find(mob_id);
+		if( mobdb != nullptr ) {
+			const char* bosstype_str = "Normal";
+			e_mob_bosstype bosstype = mobdb->get_bosstype();
+			if( bosstype == BOSSTYPE_MVP )
+				bosstype_str = "MVP";
+			else if( bosstype == BOSSTYPE_MINIBOSS )
+				bosstype_str = "Mini-Boss";
+			ShowMessage("%-10u %-30s %-15s\n", mob_id, mobdb->jname.c_str(), bosstype_str);
+		}
+		else {
+			ShowWarning("%-10u %-30s %-15s\n", mob_id, "(NOT FOUND IN DB)", "N/A");
+		}
+	}
+	ShowMessage("============================================================\n");
+	ShowMessage("[MVP PVP] Reload Completed.\n");
+	ShowMessage("============================================================\n");
+}
+
+
 
 /**
  * Sub function for mob namesearch. Here is defined which are accepted.
@@ -1055,6 +1172,12 @@ TIMER_FUNC(mob_delayspawn){
 		md->spawn_timer = INVALID_TIMER;
 		mob_spawn(md);
 	}
+
+	if( md && mob_should_trigger_mapmvp(md) ) {
+		map_setmapflag(md->m, MF_PVP, true);
+		map_setmapflag(md->m, MF_MAPMVP, true);
+	}
+
 	return 0;
 }
 
@@ -1133,6 +1256,12 @@ int32 mob_spawn (mob_data *md)
 
 	if (md->spawn) { //Respawn data
 		md->m = md->spawn->m;
+
+		if( mob_should_trigger_mapmvp(md) ) {
+			map_setmapflag(md->m, MF_PVP, true);
+			map_setmapflag(md->m, MF_MAPMVP, true);
+		}
+
 		md->x = md->centerX;
 		md->y = md->centerY;
 
@@ -3863,6 +3992,13 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 	// MvP tomb [GreenBox]
 	if (battle_config.mvp_tomb_enabled && md->spawn->state.boss && map_getmapflag(md->m, MF_NOTOMB) != 1)
 		mvptomb_create(md, mvp_sd != nullptr ? mvp_sd->status.name : (first_sd != nullptr ? first_sd->status.name : nullptr), time(nullptr));
+
+	if( mob_should_trigger_mapmvp(md) ) {
+		map_setmapflag(md->m, MF_PVP, false);
+		map_setmapflag(md->m, MF_MAPMVP, false);
+		ShowInfo("[MVP PVP]: PVP Disabled on map %d After %s (%d) Death.\n", md->m, md->name, md->mob_id);
+	}
+
 
 	if( !rebirth )
 		mob_setdelayspawn(md); //Set respawning.
@@ -7430,6 +7566,7 @@ static void mob_load(void)
 	mob_avail_db.load();
 	mob_summon_db.load();
 	map_drop_db.load();
+	mob_read_mapmvp_exclude();
 
 	mob_drop_ratio_adjust();
 	mob_skill_db_set();

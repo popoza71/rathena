@@ -704,6 +704,7 @@ enum e_mapflag : int16 {
 	MF_NOMACROCHECKER,
 	MF_INVINCIBLE_TIME,
 	MF_NOTOKEN, //puppy MF_NOTOKEN
+	MF_MAPMVP,
 	MF_MAX
 };
 

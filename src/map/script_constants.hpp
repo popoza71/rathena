@@ -537,6 +537,7 @@
 	export_constant(MF_NOMACROCHECKER);
 	export_constant(MF_INVINCIBLE_TIME);
 	export_constant(MF_NOTOKEN); //puppy MF_NOTOKEN
+	export_constant(MF_MAPMVP);
 
 	/* setcell types */
 	export_constant(CELL_WALKABLE);

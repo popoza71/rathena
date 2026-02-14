@@ -14,6 +14,9 @@
  	int32 check_stat_bypass;
 	int32 sc_buff_effect_boss;
 
+	int32 mapmvp_enabled;
+	int32 mapmvp_miniboss_enabled;
+
 	int32 charm_refine_enable;	// Charm Refine
 	int32 pet_refine_enable;	// Pet Refine
 
@@ -69,13 +72,11 @@
 	int32 global_max_trap;
 
 	/*
-
 	int32 bowling_bash_min_count_re;
 	int32 bowling_bash_max_count_re;
 	int32 holy_cross_2spear_weapon;
 	int32 sonic_acceleration_dmg;
 	int32 backstab_dagger_hit;
-	int32 pvp_mvp_map;
 	int32 bowlingbash_reduce_dmg_not_2hsw;
 	//int32 sub_ele_capping;
 	int32 sanctuary_disable;

@@ -1,0 +1,40 @@
+#-----------------------------------------------------------------------------|
+#          			   ______                                                 |
+#          			   | ___ \                                                |
+#          			   | |_/ / ___   _   _  _ __                              |
+#          			   |    / / _ \ | | | || '__|                             |
+#          			   | |\ \| (_) || |_| || |                                |
+#          			   \_| \_|\___/  \__, ||_|                                |
+#          						      __/ |                                   |
+#          						     |___/ Project Development                |
+#                  [ Project Hercules / rAthena Version ]                     |
+##############################################################################|
+#                         ___   ___  ___    _                                 |
+#                        (__ \ / _ \(__ \  / )                                |
+#                         / _/( (_) )/ _/ / _ \                               |
+#                        (____)\___/(____)\___/                               |
+#                                                                             |
+#=============================================================================|
+#--------------------- SCRIPT INFORMATION ------------------------------------|
+#   Name: Map MVP Exclude List                                                |
+#   Date: [01-17-2026]                                                        |
+#   Version : 2.0 (14a6a7a497b3a90ae90401c873a7a720b52c795d)                  |
+#   Compatible: rAthena Emulator                                              |
+#=============================================================================|
+#   Map MVP Exclude List                                                      |
+#=============================================================================|
+#  Information:                                                               |
+#      This file contains mob IDs that should NOT trigger the                 |
+#      MAPMVP/PVP mapflag system even if they are classified as               |
+#      Boss or Mini-Boss monsters.                                            |
+#                                                                             |
+#  Common Case: Some OFFICIAL MOBS are classified as                          |
+#              Mini-Boss (BossType: 1) but shouldn't enable PVP on their MAPS.|
+#                                                                             |
+#=============================================================================|
+#  Format: One Mob ID Per Line {Mob_ID}                                       |
+#=============================================================================|
+
+// Explanation: Kasa (1833) & Salamander (1831) - Fire Element mob in Thor Volcano => Classified as 'Mini-Boss'
+1833 // KASA
+1831 // SALAMANDER

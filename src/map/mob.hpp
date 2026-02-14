@@ -6,6 +6,7 @@
 
 #include <deque>
 #include <vector>
+#include <unordered_set>
 
 #include <common/database.hpp>
 #include <common/mmo.hpp> // struct item
@@ -326,6 +327,11 @@ private:
 
 extern MapDropDatabase map_drop_db;
 extern std::unordered_map<uint16, std::vector<spawn_info>> mob_spawn_data;
+
+/* [Royr] MVP PVP System */
+extern std::unordered_set<int32> mapmvp_exclude_mobs;
+bool mob_should_trigger_mapmvp(struct mob_data *md);
+void mob_reload_mapmvp_exclude(void);
 
 struct s_dmglog{
 	int32 id; //char id
