@@ -29,3 +29,26 @@ BUILDIN_FUNC(recal_status){
 	status_calc_pc(sd,SCO_FORCE);
 	return SCRIPT_CMD_SUCCESS;
 }
+
+/*
+	magnus_all(0/1);
+	1 = magnus all race
+	0 = default behavior
+*/
+BUILDIN_FUNC(magnus_all)
+{
+	map_session_data *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushint(st,0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	if(script_getnum(st,2) == 1)
+		sd->state.magnus_all_race = true;
+	else
+		sd->state.magnus_all_race = false;
+
+	return SCRIPT_CMD_SUCCESS;
+}
+

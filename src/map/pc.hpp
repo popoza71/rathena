@@ -482,6 +482,7 @@ public:
 		uint64 item_enchant_index;
 		unsigned int collection_flag : 5;
 		bool craft_barter;
+		bool magnus_all_race;
 	} state;
 	struct {
 		unsigned char no_weapon_damage, no_magic_damage, no_misc_damage;
