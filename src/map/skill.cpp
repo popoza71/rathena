@@ -2096,8 +2096,10 @@ int32 skill_additional_effect( block_list* src, block_list *bl, uint16 skill_id,
 				type = CAST_GROUND;
 #ifndef RENEWAL
 			else if( skill == AS_SONICBLOW ){
-				// Special case, Sonic Blow autospell should stop the player attacking.
-				unit_stop_attack( sd );
+				if (battle_config.sonic_blow_autoattack) {
+					// Special case, Sonic Blow autospell should stop the player attacking.
+					unit_stop_attack(sd);
+				}
 			}
 #endif
 
@@ -14682,6 +14684,15 @@ bool skill_check_condition_castend( map_session_data& sd, uint16 skill_id, uint1
 		sd.servantball_old = sd.servantball; //Need to do Servantball check.
 		sd.abyssball_old = sd.abyssball; //Need to do Abyssball check.
 		return true;
+	}
+
+	// Asura cast cancel options
+	if (skill_id == MO_EXTREMITYFIST &&
+		((sd.spiritball == 0 && battle_config.asura_absorb_cast_cancel) ||
+			(!sd.sc.getSCE(SC_EXPLOSIONSPIRITS) && battle_config.asura_dispell_cast_cancel)))
+	{
+		clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+		return false;
 	}
 
 	switch( sd.menuskill_id ) { // Cast start or cast end??

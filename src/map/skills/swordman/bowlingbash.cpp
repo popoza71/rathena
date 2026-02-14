@@ -9,12 +9,26 @@
 
 #include "map/battle.hpp"
 #include "map/unit.hpp"
+#include "map/pc.hpp"
 
 SkillBowlingBash::SkillBowlingBash() : SkillImpl(KN_BOWLINGBASH) {
 }
 
 void SkillBowlingBash::calculateSkillRatio(const Damage* wd, const block_list* src, const block_list* target, uint16 skill_lv, int32& base_skillratio, int32 mflag) const {
-	base_skillratio += 40 * skill_lv;
+	//base_skillratio += 40 * skill_lv;
+
+	//puppy
+	map_session_data* sd = nullptr;
+	if (src != nullptr && src->type == BL_PC)
+		sd = (map_session_data*)src;
+
+	if (sd && sd->status.weapon == W_2HSWORD) {
+		base_skillratio += 40 * skill_lv;
+	} else {
+		base_skillratio += (40 * skill_lv) * battle_config.bowlingbash_reduce_dmg_not_2hsw / 100;
+	}
+	//puppy
+
 }
 
 void SkillBowlingBash::castendDamageId(block_list* src, block_list* target, uint16 skill_lv, t_tick tick, int32& flag) const {
@@ -90,7 +104,8 @@ void SkillBowlingBash::castendDamageId(block_list* src, block_list* target, uint
 			// Recursive call
 			map_foreachinallarea(skill_area_sub, target->m, max(min_x,tx-1), max(min_y,ty-1), min(max_x,tx+1), min(max_y,ty+1), splash_target(src), src, getSkillId(), skill_lv, tick, (flag|BCT_ENEMY)+1, skill_castend_damage_id);
 			// Self-collision
-			if(target->x >= min_x && target->x <= max_x && target->y >= min_y && target->y <= max_y)
+			//if(target->x >= min_x && target->x <= max_x && target->y >= min_y && target->y <= max_y)
+			if(target->x >= min_x && target->x <= max_x && target->y >= min_y && target->y <= max_y && battle_config.bowling_bash_multi_hit)
 				skill_attack(BF_WEAPON,src,src,target,getSkillId(),skill_lv,tick,(flag&0xFFF)>0?SD_ANIMATION|count:count);
 			break;
 		}

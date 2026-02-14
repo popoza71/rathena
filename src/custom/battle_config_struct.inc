@@ -63,6 +63,7 @@
 	int32 blitz_damage_divide;
 	int32 sonic_blow_autoattack;
 	int32 bowling_bash_multi_hit;
+	int32 bowlingbash_reduce_dmg_not_2hsw;
 	int32 berserk_provork_lv;
 	int32 endure_hit;
 	int32 gank_percent;
@@ -77,7 +78,6 @@
 	int32 holy_cross_2spear_weapon;
 	int32 sonic_acceleration_dmg;
 	int32 backstab_dagger_hit;
-	int32 bowlingbash_reduce_dmg_not_2hsw;
 	//int32 sub_ele_capping;
 	int32 sanctuary_disable;
 	//int32 shadow_weapon_view;

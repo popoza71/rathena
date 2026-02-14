@@ -62,6 +62,7 @@
 	{ "blitz_damage_divide",					&battle_config.blitz_damage_divide,				1,      0,      1, },
 	{ "sonic_blow_autoattack",					&battle_config.sonic_blow_autoattack,			1,      0,      1, },
 	{ "bowling_bash_multi_hit",					&battle_config.bowling_bash_multi_hit,			1,      0,      1, },
+	{ "bowlingbash_reduce_dmg_not_2hsw",		&battle_config.bowlingbash_reduce_dmg_not_2hsw,	100,     0,     INT_MAX, },	//puppy
 	{ "berserk_provork_lv",						&battle_config.berserk_provork_lv,				10,     0,      INT_MAX, },	//puppy
 	{ "endure_hit",								&battle_config.endure_hit,						7,      0,      INT_MAX, },
 	{ "gank_percent",							&battle_config.gank_percent,					0,		0,		100 },	//puppy
@@ -76,7 +77,6 @@
 	{ "holy_cross_2spear_weapon",				&battle_config.holy_cross_2spear_weapon,		45,      0,      INT_MAX, },	//puppy
 	{ "sonic_acceleration_dmg",					&battle_config.sonic_acceleration_dmg,			90,      0,      INT_MAX, },	//puppy
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
-	{ "bowlingbash_reduce_dmg_not_2hsw",		&battle_config.bowlingbash_reduce_dmg_not_2hsw,	100,     0,     INT_MAX, },	//puppy
 	//{ "sub_ele_capping",						&battle_config.sub_ele_capping,					100,     0,     INT_MAX, },	//puppy
 	{ "sanctuary_disable",						&battle_config.sanctuary_disable,				1,      0,      1, },	//puppy
 	//{ "shadow_weapon_view",					&battle_config.shadow_weapon_view,				1,      0,      1, },	//puppy
