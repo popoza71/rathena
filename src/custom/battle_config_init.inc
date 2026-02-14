@@ -60,12 +60,13 @@
 	{ "sonic_blow_autoattack",					&battle_config.sonic_blow_autoattack,			1,      0,      1, },
 	{ "bowling_bash_multi_hit",					&battle_config.bowling_bash_multi_hit,			1,      0,      1, },
 	{ "berserk_provork_lv",						&battle_config.berserk_provork_lv,				10,     0,      INT_MAX, },	//puppy
+	{ "endure_hit",								&battle_config.endure_hit,						7,      0,      INT_MAX, },
+
 	/*
  	////Max Trap [Hyroshima]
 	//{ "skill_max_trap",						&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
 	//{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
 
-	{ "endure_hit",								&battle_config.endure_hit,						7,      0,      INT_MAX, },
 	{ "gank_percent",							&battle_config.gank_percent,					0,		0,		100 },	//puppy
 	//{ "magnus_all_element",					&battle_config.magnus_all_element,				1,      0,      1,				}, //puppy
 	{ "bowling_bash_min_count_re",				&battle_config.bowling_bash_min_count_re,		2,      0,      INT_MAX, },	//puppy

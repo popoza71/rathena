@@ -61,11 +61,12 @@
 	int32 sonic_blow_autoattack;
 	int32 bowling_bash_multi_hit;
 	int32 berserk_provork_lv;
+	int32 endure_hit;
+
 	/*
  	////Max Trap [Hyroshima]
 	//int skill_max_trap;
 	//int global_max_trap;
-	int32 endure_hit;
 	int32 gank_percent;
 
 	int32 bowling_bash_min_count_re;

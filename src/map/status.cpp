@@ -11019,7 +11019,8 @@ static bool status_change_start_post_delay(block_list* src, block_list* bl, sc_t
 			val2 = 2 + val1; // Agi change
 			break;
 		case SC_ENDURE:
-			val2 = 7; // Hit-count [Celest]
+			//val2 = 7; // Hit-count [Celest]
+			val2 = battle_config.endure_hit; // [Puppy]
 			if( !(flag&SCSTART_NOAVOID) && (bl->type&(BL_PC|BL_MER)) && !map_flag_gvg2(bl->m) && !map_getmapflag(bl->m, MF_BATTLEGROUND) && !val4 ) {
 				map_session_data *tsd;
 				if( sd ) {
