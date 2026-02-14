@@ -107,6 +107,9 @@ static int32 skill_destroy_trap( block_list *bl, va_list ap );
 static int32 skill_check_condition_mob_master_sub (block_list *bl, va_list ap);
 static bool skill_check_condition_sc_required( map_session_data& sd, uint16 skill_id, s_skill_condition& require );
 
+//Max Trap [Hyroshima]
+static int32 skill_get_lv_filter(uint16 skill_id, uint16 skill_lv);
+
 // Use this function for splash skills that can't hit icewall when cast by players
 int32 splash_target(block_list* bl) {
 	return ( bl->type == BL_MOB ) ? BL_SKILL|BL_CHAR : BL_CHAR;
@@ -187,7 +190,12 @@ int32 skill_get_time( uint16 skill_id ,uint16 skill_lv )             { skill_get
 int32 skill_get_time2( uint16 skill_id ,uint16 skill_lv )            { skill_get_lv(skill_id, skill_lv, skill_db.find(skill_id)->upkeep_time2); }
 int32 skill_get_castdef( uint16 skill_id )                           { skill_get(skill_id, skill_db.find(skill_id)->cast_def_rate); }
 int32 skill_get_castcancel( uint16 skill_id )                        { skill_get(skill_id, skill_db.find(skill_id)->castcancel); }
-int32 skill_get_maxcount( uint16 skill_id ,uint16 skill_lv )         { skill_get_lv(skill_id, skill_lv, skill_db.find(skill_id)->maxcount); }
+//int32 skill_get_maxcount( uint16 skill_id ,uint16 skill_lv )         { skill_get_lv(skill_id, skill_lv, skill_db.find(skill_id)->maxcount); }
+
+int32 skill_get_maxcount(uint16 skill_id, uint16 skill_lv)			{ return skill_get_lv_filter(skill_id, skill_lv); }
+//Max Trap [Hyroshima]
+int32 skill_get_maxcount_s(uint16 skill_id, uint16 skill_lv)		{ skill_get_lv(skill_id, skill_lv, skill_db.find(skill_id)->maxcount); }
+
 int32 skill_get_blewcount( uint16 skill_id ,uint16 skill_lv )        { skill_get_lv(skill_id, skill_lv, skill_db.find(skill_id)->blewcount); }
 int32 skill_get_castnodex( uint16 skill_id )                         { skill_get(skill_id, skill_db.find(skill_id)->castnodex); }
 int32 skill_get_delaynodex( uint16 skill_id )                        { skill_get(skill_id, skill_db.find(skill_id)->delaynodex); }
@@ -221,6 +229,56 @@ int32 skill_get_state( uint16 skill_id )                             { skill_get
 size_t skill_get_status_count( uint16 skill_id )                   { skill_get(skill_id, skill_db.find(skill_id)->require.status.size()); }
 int32 skill_get_spiritball( uint16 skill_id, uint16 skill_lv )       { skill_get_lv(skill_id, skill_lv, skill_db.find(skill_id)->require.spiritball); }
 sc_type skill_get_sc(int16 skill_id)                               { if (!skill_check(skill_id)) return SC_NONE; return skill_db.find(skill_id)->sc; }
+
+
+
+//Max Trap (Global & Individual check) [Hyroshima]
+bool trap_skill_id( uint16 skill_id ){
+	switch(skill_id){
+		case RA_FIRINGTRAP:
+		case WH_DEEPBLINDTRAP:
+		case WH_SOLIDTRAP:
+		case HT_SKIDTRAP:
+		case HT_LANDMINE:
+		case HT_ANKLESNARE:
+		case HT_SHOCKWAVE:
+		case HT_SANDMAN:
+		case HT_FLASHER:
+		case HT_FREEZINGTRAP:
+		case HT_BLASTMINE:
+		case HT_CLAYMORETRAP:
+		case WH_FLAMETRAP:
+		case WH_SWIFTTRAP:
+		case RA_ELECTRICSHOCKER:
+		case RA_CLUSTERBOMB:
+		case RA_MAGENTATRAP:
+		case RA_ICEBOUNDTRAP:
+		case RA_COBALTTRAP:
+		case RA_VERDURETRAP:
+		case RA_MAIZETRAP:
+		case MA_SKIDTRAP:
+			return 1;
+	}
+	return 0;
+}
+
+//Max Trap [Hyroshima]
+int32 skill_get_lv_filter( uint16 skill_id, uint16 skill_lv ){
+
+	if(!skill_check(skill_id))
+		return 0;
+
+	uint8 mcount = 0;
+	
+	if(!(mcount=skill_get_maxcount_s(skill_id,skill_lv)))
+		if(battle_config.skill_max_trap && trap_skill_id(skill_id))
+			mcount = battle_config.skill_max_trap;
+
+	return mcount;
+}
+
+
+
 
 int32 skill_get_splash( uint16 skill_id , uint16 skill_lv ) {
 	int32 splash = skill_get_splash_(skill_id, skill_lv);
@@ -11608,6 +11666,10 @@ std::shared_ptr<s_skill_unit_group> skill_unitsetting(block_list *src, uint16 sk
 			break;
 	}
 
+	//Max Trap [Hyroshima]
+	if(src->type == BL_PC && battle_config.global_max_trap && trap_skill_id(skill_id))
+		sd->max_trap = min(battle_config.global_max_trap,++sd->max_trap);
+
 	return group;
 }
 
@@ -13525,6 +13587,14 @@ bool skill_check_condition_castbegin( map_session_data& sd, uint16 skill_id, uin
 		sd.abyssball_old = sd.abyssball; //Need to do Abyssball check.
 		return true;
 	}
+	
+	//Max Trap [Hyroshima]
+	if(battle_config.global_max_trap && trap_skill_id(skill_id))
+		if(sd.max_trap >= battle_config.global_max_trap)
+		{
+			clif_skill_fail(sd,skill_id,USESKILL_FAIL_LEVEL,0);
+			return false;
+		}
 
 	switch( sd.menuskill_id ) {
 		case AM_PHARMACY:
@@ -17063,6 +17133,16 @@ int32 skill_delunit(skill_unit* unit)
 
 	if (group == nullptr)
 		return 0;
+
+	
+	//Max Trap [Hyroshima]
+	if(((block_list*)map_id2bl(group->src_id))->type == BL_PC && battle_config.global_max_trap && trap_skill_id(group->skill_id))
+	{		
+		TBL_PC *sd = map_id2sd(group->src_id);		
+		if (sd != nullptr)
+			sd->max_trap = max(0,--sd->max_trap);
+	}
+
 
 	if( group->state.song_dance&0x1 ) //Cancel dissonance effect.
 		skill_dance_overlap(*unit, OVERLAP_REMOVE);

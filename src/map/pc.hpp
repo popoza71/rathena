@@ -510,6 +510,9 @@ public:
 
 	int32 langtype;
 	struct mmo_charstatus status;
+	
+	//Max Trap (Global) [Hyroshima]
+	int32 max_trap;
 
 	// Item Storages
 	struct s_storage storage, premiumStorage;

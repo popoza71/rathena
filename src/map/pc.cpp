@@ -2222,6 +2222,9 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
 		sd->status.last_point.y = sd->status.save_point.y;
 	}
 
+	//Max Trap (Global) [Hyroshima]
+	sd->max_trap = 0;
+
 	//warp player
 	enum e_setpos setpos_result = pc_setpos( sd, mapindex_name2id( sd->status.last_point.map ), sd->status.last_point.x, sd->status.last_point.y, CLR_OUTSIGHT );
 	if( setpos_result != SETPOS_OK ){

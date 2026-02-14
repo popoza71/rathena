@@ -63,12 +63,12 @@
 	{ "endure_hit",								&battle_config.endure_hit,						7,      0,      INT_MAX, },
 	{ "gank_percent",							&battle_config.gank_percent,					0,		0,		100 },	//puppy
 
-	/*
- 	////Max Trap [Hyroshima]
-	//{ "skill_max_trap",						&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
-	//{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
+ 	//Max Trap [Hyroshima]
+	{ "skill_max_trap",							&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
+	{ "global_max_trap",						&battle_config.global_max_trap,                 1,      0,      INT_MAX,        },
 
-	//{ "magnus_all_element",					&battle_config.magnus_all_element,				1,      0,      1,				}, //puppy
+	/*
+
 	{ "bowling_bash_min_count_re",				&battle_config.bowling_bash_min_count_re,		2,      0,      INT_MAX, },	//puppy
 	{ "bowling_bash_max_count_re",				&battle_config.bowling_bash_max_count_re,		4,      0,      INT_MAX, },	//puppy
 	{ "holy_cross_2spear_weapon",				&battle_config.holy_cross_2spear_weapon,		45,      0,      INT_MAX, },	//puppy

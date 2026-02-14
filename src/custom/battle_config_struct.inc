@@ -64,10 +64,11 @@
 	int32 endure_hit;
 	int32 gank_percent;
 
+ 	//Max Trap [Hyroshima]
+	int32 skill_max_trap;
+	int32 global_max_trap;
+
 	/*
- 	////Max Trap [Hyroshima]
-	//int skill_max_trap;
-	//int global_max_trap;
 
 	int32 bowling_bash_min_count_re;
 	int32 bowling_bash_max_count_re;
