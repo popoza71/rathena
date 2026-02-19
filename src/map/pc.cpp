@@ -620,6 +620,7 @@ void PenaltyDatabase::loadingFinished(){
 
 PenaltyDatabase penalty_db;
 
+/*
 void map_session_data::update_look( _look look ){
 	int32 val = this->vd.look[look];
 
@@ -681,6 +682,258 @@ void map_session_data::update_look( _look look ){
 
 	this->vd.look[look] = val;
 }
+*/
+
+
+
+
+
+///////////////////////////////
+// puppy
+
+// ------------------------------------------------------------
+// Shadow Weapon view whitelist
+// ------------------------------------------------------------
+std::vector<bool> shadow_view_flags;
+
+static void pc_read_shadow_weapon_view_flags(void)
+{
+	// Path: db/custom/shadow_weapon_view.txt
+	const std::string filename = std::string(db_path) + "/custom/shadow_weapon_view.txt";
+
+	FILE* fp = fopen(filename.c_str(), "r");
+	if (!fp) {
+		ShowWarning(
+			"pc_read_shadow_weapon_view_flags: Unable to open %s (shadow weapon whitelist disabled)\n",
+			filename.c_str()
+		);
+		shadow_view_flags.clear();
+		return;
+	}
+
+	// ขนาดปลอดภัย รองรับ item custom ID สูง ๆ
+	const int MAX_SHADOW_ITEM = 200000;
+
+	// Reset และ resize vector
+	shadow_view_flags.clear();
+	shadow_view_flags.resize(MAX_SHADOW_ITEM, false);
+
+	char line[1024];
+	size_t count = 0;
+
+	while (fgets(line, sizeof(line), fp)) {
+
+		// Trim ซ้าย (space, tab, newline)
+		char* p = line;
+		while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+			++p;
+
+		// ข้ามบรรทัดว่าง
+		if (*p == '\0')
+			continue;
+
+		// ข้าม comment (# ; //)
+		if (*p == '#' || *p == ';' || (*p == '/' && *(p + 1) == '/'))
+			continue;
+
+		// ตัด comment ท้ายบรรทัด
+		for (char* q = p; *q; ++q) {
+			if (*q == '#' || *q == ';') {
+				*q = '\0';
+				break;
+			}
+			if (*q == '/' && *(q + 1) == '/') {
+				*q = '\0';
+				break;
+			}
+		}
+
+		// แปลงเป็น item_id
+		int item_id = atoi(p);
+
+		// เช็คขอบเขต และกันซ้ำ
+		if (item_id > 0 && item_id < MAX_SHADOW_ITEM) {
+			if (!shadow_view_flags[item_id]) {
+				shadow_view_flags[item_id] = true;
+				++count;
+			}
+		}
+	}
+
+	fclose(fp);
+
+	ShowStatus(
+		"pc_read_shadow_weapon_view_flags: Done reading '%zu' entries in '%s'\n",
+		count, filename.c_str()
+	);
+}
+
+
+
+void map_session_data::update_look(_look look) {
+	int32 val = this->vd.look[look];
+
+	switch (look) {
+
+	case LOOK_WEAPON:
+		if (this->sc.option & OPTION_COSTUME) {
+			val = 0;
+			break;
+		}
+		else {
+
+			// ------------------------------------------------------------
+			// Shadow Weapon view override (cosmetic + whitelist)
+			// ------------------------------------------------------------
+			if (battle_config.show_shadow_weapon) {
+
+				enum equip_index reqi = EQI_HAND_R;
+				enum equip_index leqi = EQI_HAND_L;
+				enum equip_index seqi = EQI_SHADOW_WEAPON;
+
+				const item_data* right_it =
+					(this->equip_index[reqi] >= 0) ? this->inventory_data[this->equip_index[reqi]] : nullptr;
+
+				const item_data* left_it =
+					(this->equip_index[leqi] >= 0) ? this->inventory_data[this->equip_index[leqi]] : nullptr;
+
+				bool hasRight = (right_it != nullptr);
+				bool hasLeft = (left_it != nullptr);
+				bool leftIsWeapon = (left_it != nullptr && left_it->type == IT_WEAPON);
+
+				bool isAssassin =
+					(this->status.class_ == JOB_ASSASSIN ||
+						this->status.class_ == JOB_ASSASSIN_CROSS);
+
+				// ถ้าเป็น Assassin ที่ "มือขวาว่าง + มือซ้ายเป็นอาวุธ"
+				// ให้ปล่อย LOOK_WEAPON ไปคำนวณปกติ (จะได้เป็น 0) แล้วไปโชว์ Shadow ที่ LOOK_SHIELD แทน
+				if (!(isAssassin && !hasRight && hasLeft && leftIsWeapon)) {
+
+					if (this->equip_index[seqi] >= 0 &&
+						this->inventory_data[this->equip_index[seqi]] != nullptr) {
+
+						const item_data& sid = *this->inventory_data[this->equip_index[seqi]];
+
+						if (sid.nameid < (int)shadow_view_flags.size() &&
+							shadow_view_flags[sid.nameid]) {
+
+							val = (sid.view_id != 0) ? sid.view_id : sid.nameid;
+							break;
+						}
+					}
+				}
+			}
+
+			// ------------------------------------------------------------
+			// Normal right-hand weapon view
+			// ------------------------------------------------------------
+			enum equip_index eqi = EQI_HAND_R;
+
+			if (this->equip_index[eqi] >= 0 &&
+				this->inventory_data[this->equip_index[eqi]] != nullptr) {
+
+				const item_data& id = *this->inventory_data[this->equip_index[eqi]];
+
+				if (id.view_id != 0) {
+					val = id.view_id;
+				}
+				else {
+					val = id.nameid;
+				}
+			}
+			else {
+				// Nothing equipped
+				val = 0;
+			}
+		}
+		break;
+
+	case LOOK_SHIELD:
+		if (this->sc.option & OPTION_COSTUME) {
+			val = 0;
+			break;
+		}
+		else {
+
+			enum equip_index leqi = EQI_HAND_L;
+			enum equip_index reqi = EQI_HAND_R;
+			enum equip_index seqi = EQI_SHADOW_WEAPON;
+
+			const item_data* left_it =
+				(this->equip_index[leqi] >= 0) ? this->inventory_data[this->equip_index[leqi]] : nullptr;
+
+			const item_data* right_it =
+				(this->equip_index[reqi] >= 0) ? this->inventory_data[this->equip_index[reqi]] : nullptr;
+
+			const item_data* shdw_it =
+				(this->equip_index[seqi] >= 0) ? this->inventory_data[this->equip_index[seqi]] : nullptr;
+
+			bool hasLeft = (left_it != nullptr);
+			bool hasRight = (right_it != nullptr);
+			bool hasShadow = (shdw_it != nullptr);
+
+			// Nothing equipped on left
+			if (!hasLeft) {
+				val = 0;
+				break;
+			}
+
+			// 2-handed weapons or 2-handed shields are only sent on LOOK_WEAPON
+			if (this->equip_index[leqi] >= 0 &&
+				this->equip_index[leqi] == this->equip_index[reqi]) {
+
+				val = 0;
+				break;
+			}
+
+			const item_data& id = *left_it;
+			bool leftIsWeapon = (id.type == IT_WEAPON);
+
+			// เฉพาะ Assassin / Assassin Cross
+			bool isAssassin =
+				(this->status.class_ == JOB_ASSASSIN ||
+					this->status.class_ == JOB_ASSASSIN_CROSS);
+
+			// ถ้าไม่ใช่แอส → แสดงมือซ้ายตามปกติ
+			if (!isAssassin) {
+				val = (id.view_id != 0) ? id.view_id : id.nameid;
+				break;
+			}
+
+			// ถ้าใส่ 2 มือ และมือซ้ายเป็นอาวุธ → ไม่ต้องแสดงมือซ้าย (กันเพี้ยน)
+			// (ถ้ามือซ้ายเป็นโล่ จะไม่เข้าเงื่อนไขนี้ โล่ยังแสดงปกติ)
+			if (hasRight && leftIsWeapon) {
+				val = 0;
+				break;
+			}
+
+			// ใส่มือซ้ายอย่างเดียว (มือขวาว่าง) + มือซ้ายเป็นอาวุธ + มี Shadow + เปิด config
+			// → ให้มือซ้ายโชว์เป็น Shadow Weapon (แทนอาวุธมือซ้ายจริง)
+			if (!hasRight && leftIsWeapon && hasShadow && battle_config.show_shadow_weapon) {
+
+				const item_data& sid = *shdw_it;
+
+				if (sid.nameid < (int)shadow_view_flags.size() &&
+					shadow_view_flags[sid.nameid]) {
+
+					val = (sid.view_id != 0) ? sid.view_id : sid.nameid;
+					break;
+				}
+			}
+
+			// fallback: แสดงมือซ้ายตามปกติ
+			val = (id.view_id != 0) ? id.view_id : id.nameid;
+		}
+		break;
+
+	default:
+		// Do nothing
+		return;
+	}
+
+	this->vd.look[look] = val;
+}
+// puppy
 
 #define MOTD_LINE_SIZE 128
 static char motd_text[MOTD_LINE_SIZE][CHAT_SIZE_MAX]; // Message of the day buffer [Valaris]
@@ -12329,6 +12582,12 @@ bool pc_equipitem(map_session_data *sd,int16 n,int32 req_pos,bool equipswitch)
 		pc_calcweapontype(sd);
 		clif_changelook(sd,LOOK_WEAPON,sd->status.weapon);
 	}
+
+	// Shadow weapon changes only the displayed weapon look.
+	if( pos & EQP_SHADOW_WEAPON ){
+		clif_changelook( sd, LOOK_WEAPON, 0 );
+	}
+
 	if(pos & EQP_HAND_L) {
 		if(id) {
 			if(id->type == IT_WEAPON) {
@@ -12590,6 +12849,12 @@ bool pc_unequipitem(map_session_data *sd, int32 n, int32 flag) {
 			status_change_end(sd, SC_EDP);
 		}
 	}
+
+	// Shadow weapon changes only the displayed weapon look.
+	if( pos & EQP_SHADOW_WEAPON ){
+		clif_changelook( sd, LOOK_WEAPON, 0 );
+	}
+
 	if(pos & EQP_HAND_L) {
 		if (sd->status.shield && battle_getcurrentskill(sd) == LG_SHIELDSPELL)
 			unit_skillcastcancel(sd, 0); // Cancel Shield Spell if player swaps shields.
@@ -16333,6 +16598,9 @@ void do_init_pc(void) {
 	itemcd_db = idb_alloc(DB_OPT_RELEASE_DATA);
 
 	pc_readdb();
+
+	pc_read_shadow_weapon_view_flags();
+
 	pc_read_motd(); // Read MOTD [Valaris]
 	attendance_db.load();
 	reputation_db.load();

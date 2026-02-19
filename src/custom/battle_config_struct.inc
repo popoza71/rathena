@@ -80,8 +80,6 @@
 	int32 sonic_acceleration_dmg;
 	int32 backstab_dagger_hit;
 
-	/*
-	//int32 shadow_weapon_view;
-	//int32 shadow_weapon_allow_empty_hand;
-	//int32 shadow_weapon_fallback;
-	*/
+	
+	int32 show_shadow_weapon;
+	

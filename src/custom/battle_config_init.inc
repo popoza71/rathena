@@ -79,10 +79,6 @@
 	{ "sonic_acceleration_dmg",					&battle_config.sonic_acceleration_dmg,			90,      0,      INT_MAX, },	//puppy
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
 
-
-	/*
 	
-	//{ "shadow_weapon_view",					&battle_config.shadow_weapon_view,				1,      0,      1, },	//puppy
-	//{ "shadow_weapon_allow_empty_hand",		&battle_config.shadow_weapon_allow_empty_hand,	0,		0,		1 },	//puppy
-	//{ "shadow_weapon_fallback",				&battle_config.shadow_weapon_fallback,			0,		0,		1, },	//puppy
-	*/
+	
+	{ "show_shadow_weapon",						&battle_config.show_shadow_weapon,				0, 0, 1, },
