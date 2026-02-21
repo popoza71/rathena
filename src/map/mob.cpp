@@ -187,9 +187,12 @@ TIMER_FUNC(mvptomb_delayspawn){
  * @param time: time of mob's death
  * @author [GreenBox]
  */
-void mvptomb_create(mob_data *md, char *killer, time_t time)
+//void mvptomb_create(mob_data *md, char *killer, time_t time)
+void mvptomb_create(mob_data *md, char *killer, time_t time, uint32 killer_char_id, int32 killer_guild_id, const char *killer_guild_name)
 {
 	npc_data *nd;
+	std::map<int32, s_mvp_tomb_damage> guild_damage_map;
+	std::vector<s_mvp_tomb_damage> player_list;
 
 	if ( md->tomb_nid )
 		mvptomb_destroy(md);
@@ -214,6 +217,7 @@ void mvptomb_create(mob_data *md, char *killer, time_t time)
 	nd->u.tomb.md = md;
 	nd->u.tomb.kill_time = time;
 	nd->u.tomb.spawn_timer = INVALID_TIMER;
+	nd->u.tomb.killer_char_id = killer_char_id;
 
 	nd->dynamicnpc.owner_char_id = 0;
 	nd->dynamicnpc.last_interaction = 0;
@@ -223,6 +227,134 @@ void mvptomb_create(mob_data *md, char *killer, time_t time)
 		safestrncpy(nd->u.tomb.killer_name, killer, NAME_LENGTH);
 	else
 		nd->u.tomb.killer_name[0] = '\0';
+
+	/**
+	* Author: [royrdev]
+	* Enhanced MVP Tomb System
+	**/
+	nd->u.tomb.mob_id = md->mob_id;
+	if( md->spawn ) {
+		nd->u.tomb.respawn_time = md->spawn->delay1 + md->spawn->delay2;
+	}
+	else {
+		nd->u.tomb.respawn_time = 0;
+	}
+
+	nd->u.tomb.data = (s_mvp_tomb_data*)aCalloc(1, sizeof(s_mvp_tomb_data));
+	memset(nd->u.tomb.data, 0, sizeof(s_mvp_tomb_data));
+
+	s_mvp_kill_history *kill_entry = &nd->u.tomb.data->kill_history[0];
+	kill_entry->char_id = killer_char_id;
+	if( killer )
+		safestrncpy(kill_entry->killer_name, killer, NAME_LENGTH);
+	else
+		kill_entry->killer_name[0] = '\0';
+	kill_entry->kill_time = time;
+	kill_entry->guild_id = killer_guild_id;
+	if( killer_guild_name)
+		safestrncpy(kill_entry->guild_name, killer_guild_name, NAME_LENGTH);
+	else
+		kill_entry->guild_name[0] = '\0';
+	nd->u.tomb.data->kill_history_count = 1;
+
+	for( const s_dmglog& entry : md->dmglog ) {
+		if( entry.flag == MDLF_SELF)
+			continue;
+
+		nd->u.tomb.data->total_damage += entry.dmg;
+		map_session_data* tsd = map_charid2sd(entry.id);
+
+		s_mvp_tomb_damage pdmg = {};
+		pdmg.char_id = entry.id;
+		pdmg.damage = entry.dmg;
+		pdmg.guild_id = 0;
+		pdmg.guild_name[0] = '\0';
+
+		if( tsd != nullptr ) {
+			safestrncpy(pdmg.name, tsd->status.name, NAME_LENGTH);
+			pdmg.guild_id = tsd->status.guild_id;
+			if( pdmg.guild_id > 0 ) {
+				std::shared_ptr<MapGuild> g = guild_search(pdmg.guild_id);
+				if( g != nullptr ) {
+					safestrncpy(pdmg.guild_name, g->guild.name, NAME_LENGTH);
+				}
+			}
+		}
+		else {
+			snprintf(pdmg.name, NAME_LENGTH, "Offline#%u", entry.id);
+		}
+		player_list.push_back(pdmg);
+		if( pdmg.guild_id > 0 ) {
+			auto it = guild_damage_map.find(pdmg.guild_id);
+			if( it != guild_damage_map.end() ) {
+				it->second.damage += entry.dmg;
+			}
+			else {
+				s_mvp_tomb_damage gdmg = {};
+				gdmg.guild_id = pdmg.guild_id;
+				safestrncpy(gdmg.guild_name, pdmg.guild_name, NAME_LENGTH);
+				gdmg.damage = entry.dmg;
+				guild_damage_map[pdmg.guild_id] = gdmg;
+			}
+		}
+	}
+	std::sort(player_list.begin(), player_list.end(), 
+		[](const s_mvp_tomb_damage& a, const s_mvp_tomb_damage& b ) {
+			return a.damage > b.damage;
+		});
+
+	for( size_t i = 0; i < player_list.size() && i < MVP_TOMB_MAX_PLAYERS; i++ ) {
+		nd->u.tomb.data->top_players[i] = player_list[i];
+		nd->u.tomb.data->player_count++;
+	}
+	std::vector<s_mvp_tomb_damage> guild_list;
+	for( auto& pair : guild_damage_map ) {
+		guild_list.push_back(pair.second);
+	}
+	std::sort(guild_list.begin(), guild_list.end(),
+		[](const s_mvp_tomb_damage& a, const s_mvp_tomb_damage& b ) {
+			return a.damage > b.damage;
+		});
+	for( size_t i = 0; i < guild_list.size() && i < MVP_TOMB_MAX_GUILDS; i++ ) {
+		nd->u.tomb.data->top_guilds[i] = guild_list[i];
+		nd->u.tomb.data->guild_count++;
+	}
+	for( const auto& drop : md->db->mvpitem ) {
+		if( drop == nullptr || drop->nameid == 0 )
+			continue;
+		if( nd->u.tomb.data->drop_count >= MVP_TOMB_MAX_DROPS)
+			break;
+		s_mvp_tomb_drop *tdrop = &nd->u.tomb.data->drops[nd->u.tomb.data->drop_count];
+		tdrop->nameid = drop->nameid;
+		tdrop->rate = drop->rate;
+		tdrop->is_mvp_drop = true;
+		std::shared_ptr<item_data> id = item_db.find(drop->nameid);
+		if( id != nullptr )
+			safestrncpy(tdrop->name, id->ename.c_str(), ITEM_NAME_LENGTH);
+		else
+			snprintf(tdrop->name, ITEM_NAME_LENGTH, "Unknown#%u", drop->nameid);
+		nd->u.tomb.data->drop_count++;
+	}
+	for( const auto& drop : md->db->dropitem ) {
+		if( drop == nullptr || drop->nameid == 0 )
+			continue;
+
+		if( nd->u.tomb.data->drop_count >= MVP_TOMB_MAX_DROPS )
+			break;
+
+		s_mvp_tomb_drop *tdrop = &nd->u.tomb.data->drops[nd->u.tomb.data->drop_count];
+		tdrop->nameid = drop->nameid;
+		tdrop->rate = drop->rate;
+		tdrop->is_mvp_drop = false;
+		std::shared_ptr<item_data> id = item_db.find(drop->nameid);
+
+		if( id != nullptr )
+			safestrncpy(tdrop->name, id->ename.c_str(), ITEM_NAME_LENGTH);
+		else
+			snprintf(tdrop->name, ITEM_NAME_LENGTH, "Unknown#%u", drop->nameid);
+		nd->u.tomb.data->drop_count++;
+	}
+
 
 	map_addnpc(nd->m, nd);
 	if(map_addblock(nd))
@@ -241,6 +373,12 @@ void mvptomb_destroy(mob_data *md) {
 	npc_data *nd;
 
 	if ( (nd = map_id2nd(md->tomb_nid)) ) {
+
+		if( nd->u.tomb.data != nullptr ) {
+			aFree(nd->u.tomb.data);
+			nd->u.tomb.data = nullptr;
+		}
+
 		int32 i;
 		struct map_data *mapdata = map_getmapdata(nd->m);
 
@@ -3990,8 +4128,41 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 	}
 
 	// MvP tomb [GreenBox]
-	if (battle_config.mvp_tomb_enabled && md->spawn->state.boss && map_getmapflag(md->m, MF_NOTOMB) != 1)
-		mvptomb_create(md, mvp_sd != nullptr ? mvp_sd->status.name : (first_sd != nullptr ? first_sd->status.name : nullptr), time(nullptr));
+	//if (battle_config.mvp_tomb_enabled && md->spawn->state.boss && map_getmapflag(md->m, MF_NOTOMB) != 1)
+	//	mvptomb_create(md, mvp_sd != nullptr ? mvp_sd->status.name : (first_sd != nullptr ? first_sd->status.name : nullptr), time(nullptr));
+
+	if ( battle_config.mvp_tomb_enabled && md->spawn->state.boss && map_getmapflag(md->m, MF_NOTOMB) != 1) {
+		/**
+		* Author: [royrdev]
+		* Enhanced MVP Tomb System
+		**/
+		char* killer_name = nullptr;
+		uint32 killer_char_id = 0;
+		int32 killer_guild_id = 0;
+		const char* killer_guild_name = nullptr;
+
+		if( mvp_sd != nullptr ) {
+			killer_name = mvp_sd->status.name;
+			killer_char_id = mvp_sd->status.char_id;
+			killer_guild_id = mvp_sd->status.guild_id;
+			if( killer_guild_id > 0 ) {
+				std::shared_ptr<MapGuild> g = guild_search(killer_guild_id);
+				if( g != nullptr )
+					killer_guild_name = g->guild.name;
+			}
+		}
+		else if( first_sd != nullptr ) {
+			killer_name = first_sd->status.name;
+			killer_char_id = first_sd->status.char_id;
+			killer_guild_id = first_sd->status.guild_id;
+			if( killer_guild_id > 0 ) {
+				std::shared_ptr<MapGuild> g = guild_search(killer_guild_id);
+				if( g != nullptr )
+					killer_guild_name = g->guild.name;
+			}
+		}
+		mvptomb_create(md, killer_name, time(nullptr), killer_char_id, killer_guild_id, killer_guild_name);
+	}
 
 	if( mob_should_trigger_mapmvp(md) ) {
 		map_setmapflag(md->m, MF_PVP, false);

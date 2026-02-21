@@ -18,6 +18,16 @@
 #include "navi.hpp" // navi stuff
 
 struct block_list;
+
+/**
+ * Author: [royrdev]
+ * Enhanced MVP Tomb Structures
+ **/
+struct s_mvp_tomb_data;
+struct s_mvp_tomb_damage;
+struct s_mvp_tomb_drop;
+struct s_mvp_kill_history;
+
 struct npc_data;
 struct view_data;
 
@@ -230,7 +240,18 @@ struct npc_data : public block_list {
 			mob_data *md;
 			time_t kill_time;
 			char killer_name[NAME_LENGTH];
-			int32 spawn_timer;
+			//int32 spawn_timer;
+
+			uint32 killer_char_id;
+ 			int32 spawn_timer;
+			/**
+			 * Author: [royrdev]
+			 * Enhanced MVP Tomb Data
+			 **/
+			uint16 mob_id;
+			uint32 respawn_time;
+			s_mvp_tomb_data *data;
+
 		} tomb;
 		struct {
 			bool extended;

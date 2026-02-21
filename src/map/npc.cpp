@@ -34,6 +34,7 @@
 #include "pc.hpp"
 #include "pet.hpp"
 #include "script.hpp" // script_config
+#include "itemdb.hpp" // item_db for itemlinks [MVP Tomb]
 
 using namespace rathena;
 
@@ -2429,7 +2430,7 @@ int32 npc_globalmessage(const char* name, const char* mes)
 
 	return 0;
 }
-
+/*
 // MvP tomb [GreenBox]
 void run_tomb(map_session_data* sd, npc_data* nd)
 {
@@ -2439,20 +2440,200 @@ void run_tomb(map_session_data* sd, npc_data* nd)
 	strftime(time, sizeof(time), "%H:%M", localtime(&nd->u.tomb.kill_time));
 
 	// TODO: Find exact color?
-	snprintf( buffer, sizeof( buffer ), msg_txt( sd, 657 ), nd->u.tomb.md->db->name.c_str() ); // [ ^EE0000%s^000000 ]
-	clif_scriptmes( *sd, nd->id, buffer );
+	snprintf(buffer, sizeof(buffer), msg_txt(sd, 657), nd->u.tomb.md->db->name.c_str()); // [ ^EE0000%s^000000 ]
+	clif_scriptmes(*sd, nd->id, buffer);
 
-	clif_scriptmes( *sd, nd->id, msg_txt( sd, 658 ) ); // Has met its demise
+	clif_scriptmes(*sd, nd->id, msg_txt(sd, 658)); // Has met its demise
 
-	snprintf( buffer, sizeof( buffer ), msg_txt( sd, 659 ), time ); // Time of death : ^EE0000%s^000000
-	clif_scriptmes( *sd, nd->id, buffer );
+	snprintf(buffer, sizeof(buffer), msg_txt(sd, 659), time); // Time of death : ^EE0000%s^000000
+	clif_scriptmes(*sd, nd->id, buffer);
 
-	clif_scriptmes( *sd, nd->id, msg_txt( sd, 660 ) ); // Defeated by
+	clif_scriptmes(*sd, nd->id, msg_txt(sd, 660)); // Defeated by
 
-	snprintf( buffer, sizeof( buffer ), msg_txt( sd, 661 ), nd->u.tomb.killer_name[0] ? nd->u.tomb.killer_name : "Unknown" ); // [^EE0000%s^000000]
-	clif_scriptmes( *sd, nd->id, buffer );
+	snprintf(buffer, sizeof(buffer), msg_txt(sd, 661), nd->u.tomb.killer_name[0] ? nd->u.tomb.killer_name : "Unknown"); // [^EE0000%s^000000]
+	clif_scriptmes(*sd, nd->id, buffer);
 
-	clif_scriptclose( *sd, nd->id );
+	clif_scriptclose(*sd, nd->id);
+}
+*/
+
+/**
+ * Author: [royrdev]
+ * Format Damage Display (e.g., 42.81K, 2.88M, 10.03M)
+ */
+static void mvptomb_format_damage(int64 damage, char* buffer, size_t size) {
+	if( damage >= 1000000000LL ) {
+		snprintf(buffer, size, "%.2fB", damage / 1000000000.0);
+	}
+	else if( damage >= 1000000LL ) {
+		snprintf(buffer, size, "%.2fM", damage / 1000000.0);
+	}
+	else if( damage >= 1000LL ) {
+		snprintf(buffer, size, "%.2fK", damage / 1000.0);
+	}
+	else {
+		snprintf(buffer, size, "%lld", (long long)damage);
+	}
+}
+
+/**
+ * Author: [royrdev]
+ * Format Drop Rate Display (e.g., 0.01%, 5.50%, 42.68%)
+ */
+static void mvptomb_format_droprate(uint32 rate, char* buffer, size_t size) {
+	double percent = rate / 100.0;
+	snprintf(buffer, size, "%.2f%%", percent);
+}
+
+
+// MvP tomb [GreenBox]
+void run_tomb(map_session_data* sd, npc_data* nd)
+{
+	/**
+	* Author: [royrdev]
+	* Enhanced MVP Tomb System
+	**/
+	char buffer[512];
+	char time_str[32];
+	char dmg_str[32];
+	char rate_str[16];
+	int32 i;
+
+	strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", localtime(&nd->u.tomb.kill_time));
+	clif_scriptmes(*sd, nd->id, "");
+	clif_set_npc_window_pos(*sd, 0, 0);
+	clif_set_npc_window_size(*sd, 400, 768);
+
+	const char* mvp_name = (nd->u.tomb.md != nullptr) ? nd->u.tomb.md->db->name.c_str() : "Unknown MVP";
+	snprintf(buffer, sizeof(buffer), "<font size = 11><b>[ ^EE0000%s^000000 ]</b></font>", mvp_name);
+	clif_scriptmes(*sd, nd->id, buffer);
+
+	snprintf(buffer, sizeof(buffer), "<font size = 11>Time of ^EE0000Death^000000 : %s", time_str);
+	clif_scriptmes(*sd, nd->id, buffer);
+
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+
+	clif_scriptmes(*sd, nd->id, "<font size = 11><b>PLAYERS</b></font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+
+	if( nd->u.tomb.data != nullptr && nd->u.tomb.data->player_count > 0 ) {
+		for( i = 0; i < nd->u.tomb.data->player_count; i++ ) {
+			s_mvp_tomb_damage *player = &nd->u.tomb.data->top_players[i];
+			mvptomb_format_damage(player->damage, dmg_str, sizeof(dmg_str));
+			
+			if( player->guild_id > 0 && player->guild_name[0] != '\0' ) {
+				snprintf(buffer, sizeof(buffer), "<font size = 11>%d. %s [%s]: ^00AA00%s^000000</font>",
+					i + 1, player->name, player->guild_name, dmg_str);
+			}
+			else {
+				snprintf(buffer, sizeof(buffer), "<font size = 11>%d. %s : ^00AA00%s^000000</font>",
+					i + 1, player->name, dmg_str);
+			}
+			clif_scriptmes(*sd, nd->id, buffer);
+		}
+	}
+	else {
+		clif_scriptmes(*sd, nd->id, "<font size = 11>No damage records are available at the moment.</font>");
+	}
+
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11><b>GUILDS</b></font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+
+	if( nd->u.tomb.data != nullptr && nd->u.tomb.data->guild_count > 0 ) {
+		for( i = 0; i < nd->u.tomb.data->guild_count; i++ ) {
+			s_mvp_tomb_damage *guild = &nd->u.tomb.data->top_guilds[i];
+			mvptomb_format_damage(guild->damage, dmg_str, sizeof(dmg_str));
+			snprintf(buffer, sizeof(buffer), "<font size = 11>%d. %s : ^00AA00%s^000000</font>",
+				i + 1, guild->guild_name, dmg_str);
+			clif_scriptmes(*sd, nd->id, buffer);
+		}
+	}
+	else {
+		clif_scriptmes(*sd, nd->id, "<font size = 11>No guild records are available at this time.</font>");
+	}
+
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11><b>DROPS</b></font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+
+	if( nd->u.tomb.data != nullptr && nd->u.tomb.data->drop_count > 0 ) {
+		for( i = 0; i < nd->u.tomb.data->drop_count; i++ ) {
+			s_mvp_tomb_drop *drop = &nd->u.tomb.data->drops[i];
+			mvptomb_format_droprate(drop->rate, rate_str, sizeof(rate_str));
+
+			std::shared_ptr<item_data> id = item_db.find(drop->nameid);
+			std::string item_icon;
+			std::string item_link;
+
+			if( id != nullptr ) {
+				item_icon = item_db.create_item_icon_for_mes(id, nullptr);
+				item_link = item_db.create_item_link_for_mes(id, true, nullptr);
+			}
+			else {
+				item_icon = "";
+				item_link = drop->name;
+			}
+			if( drop->is_mvp_drop ) {
+				// MVP drops: [MVP] + Icon + Link + Rate
+				snprintf(buffer, sizeof(buffer), "<font size = 11><b>^FF0000[MVP]^000000</b> %s %s : ^0000FF%s^000000</font>", item_icon.c_str(), item_link.c_str(), rate_str);
+			}
+			else {
+				// Normal drops: Icon + Link + Rate
+				snprintf(buffer, sizeof(buffer), "<font size = 11>%s %s : ^0000FF%s^000000</font>", item_icon.c_str(), item_link.c_str(), rate_str);
+			}
+			clif_scriptmes(*sd, nd->id, buffer);
+		}
+	}
+	else {
+		clif_scriptmes(*sd, nd->id, "<font size = 11>No drop information is currently available.</font>");
+	}
+
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11><b>KILL HISTORY</b></font>");
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+
+	if( nd->u.tomb.data != nullptr && nd->u.tomb.data->kill_history_count > 0 ) {
+		for( i = 0; i < nd->u.tomb.data->kill_history_count; i++ ) {
+			s_mvp_kill_history *kill = &nd->u.tomb.data->kill_history[i];
+			char kill_time_str[20];
+			strftime(kill_time_str, sizeof(kill_time_str), "%m-%d %H:%M", localtime(&kill->kill_time));
+			if( kill->guild_id > 0 && kill->guild_name[0] != '\0' ) {
+				snprintf(buffer, sizeof(buffer), "<font size = 11>%d. ^EE0000%s^000000 [%s] - %s</font>",
+					i + 1, kill->killer_name[0] ? kill->killer_name : "<font size = 11>Unknown</font>", 
+					kill->guild_name, kill_time_str);
+			}
+			else {
+				snprintf(buffer, sizeof(buffer), "<font size = 11>%d. ^EE0000%s^000000 - %s</font>",
+					i + 1, kill->killer_name[0] ? kill->killer_name : "<font size = 11>Unknown</font>", 
+					kill_time_str);
+			}
+			clif_scriptmes(*sd, nd->id, buffer);
+		}
+	}
+	else {
+		clif_scriptmes(*sd, nd->id, "<font size = 11>No kill history is currently available for the last hitter.</font>");
+	}
+	clif_scriptmes(*sd, nd->id, "<font size = 11>------------------------</font>");
+	if( nd->u.tomb.respawn_time > 0 ) {
+		time_t now = time(nullptr);
+		time_t death_time = nd->u.tomb.kill_time;
+		time_t respawn_time = death_time + (nd->u.tomb.respawn_time / 1000);
+		if( now < respawn_time ) {
+			int32 remaining	= (int32)(respawn_time - now);
+			int32 hours		= remaining / 3600;
+			int32 minutes	= (remaining % 3600) / 60;
+			int32 seconds	= remaining % 60;
+			snprintf(buffer, sizeof(buffer), "<font size = 11><b>Respawn In :</b> %02d:%02d:%02d</font>",
+				hours, minutes, seconds);
+			clif_scriptmes(*sd, nd->id, buffer);
+		}
+		else {
+			clif_scriptmes(*sd, nd->id, "<font size = 11><b>***MVP MAY HAVE RESPAWNED***</b></font>");
+		}
+	}
+	clif_scriptclose(*sd, nd->id);
+
 }
 
 /*==========================================

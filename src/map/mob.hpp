@@ -340,6 +340,63 @@ struct s_dmglog{
 	uint32 flag : 2; //0: Normal. 1: Homunc exp. 2: Pet exp
 };
 
+/**
+ * Author: [royrdev]
+ * Enhanced MVP Tomb Maximum Entries Display
+ **/
+#ifndef MVP_TOMB_MAX_PLAYERS
+#define MVP_TOMB_MAX_PLAYERS 10
+#endif
+#ifndef MVP_TOMB_MAX_GUILDS
+#define MVP_TOMB_MAX_GUILDS 5
+#endif
+#ifndef MVP_TOMB_MAX_DROPS
+#define MVP_TOMB_MAX_DROPS 15
+#endif
+#ifndef MVP_TOMB_KILL_HISTORY_SIZE
+#define MVP_TOMB_KILL_HISTORY_SIZE 5
+#endif
+
+///< Damage Entry Display
+struct s_mvp_tomb_damage {
+	uint32 char_id;
+	char name[NAME_LENGTH];
+	int64 damage;
+	int32 guild_id;
+	char guild_name[NAME_LENGTH];
+};
+
+///< Drop Entry Display
+struct s_mvp_tomb_drop {
+	t_itemid nameid;
+	char name[ITEM_NAME_LENGTH];
+	uint32 rate;       // Original rate from mob_db (0-10000 = 0.01% - 100%)
+	bool is_mvp_drop;  // true = MVP drop, false = normal drop
+};
+
+///< Kill History Entry
+struct s_mvp_kill_history {
+	uint32 char_id;
+	char killer_name[NAME_LENGTH];
+	time_t kill_time;
+	int32 guild_id;
+	char guild_name[NAME_LENGTH];
+};
+
+///< MVP Tomb Extended Data
+struct s_mvp_tomb_data {
+	s_mvp_tomb_damage top_players[MVP_TOMB_MAX_PLAYERS];
+	s_mvp_tomb_damage top_guilds[MVP_TOMB_MAX_GUILDS];
+	s_mvp_tomb_drop drops[MVP_TOMB_MAX_DROPS];
+	s_mvp_kill_history kill_history[MVP_TOMB_KILL_HISTORY_SIZE];
+	uint8 player_count;
+	uint8 guild_count;
+	uint8 drop_count;
+	uint8 kill_history_count;
+	int64 total_damage;
+};
+
+
 struct mob_data : public block_list {
 	struct unit_data  ud;
 	struct view_data *vd;
@@ -596,7 +653,8 @@ DropRateResult mob_getdroprate_extended(block_list* src, std::shared_ptr<s_mob_d
 // MvP Tomb System
 int32 mvptomb_setdelayspawn(npc_data *nd);
 TIMER_FUNC(mvptomb_delayspawn);
-void mvptomb_create(mob_data *md, char *killer, time_t time);
+//void mvptomb_create(mob_data *md, char *killer, time_t time);
+void mvptomb_create(mob_data * md, char* killer, time_t time, uint32 killer_char_id, int32 killer_guild_id, const char* killer_guild_name);
 void mvptomb_destroy(mob_data *md);
 
 void mob_setdropitem_option( item& itm, const std::shared_ptr<s_mob_drop>& mobdrop );
