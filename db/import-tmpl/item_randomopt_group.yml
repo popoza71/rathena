@@ -26,6 +26,7 @@
 #   Group               Item Random Option Group constant.
 #   Slots:              Slot in which an Item Random Option is guaranteed to be applied. Max of MAX_ITEM_RDM_OPT.
 #     - Slot            Slot number.
+#       Rate:           Chance that the slot bonus will be applied or not (1 = 0.01%, 10000 = 100%). (Default: 0 = disabled) (Hyroshima)
 #       Options:        List of possible Item Random Options for slot.
 #         - Option      Item Random Option constant.
 #           MinValue    Minimum value. (Default: 0)

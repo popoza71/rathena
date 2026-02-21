@@ -3350,6 +3350,7 @@ struct s_random_opt_group {
 	std::map<uint16, std::vector<std::shared_ptr<s_random_opt_group_entry>>> slots;
 	uint16 max_random;
 	std::vector<std::shared_ptr<s_random_opt_group_entry>> random_options;
+	uint16 rate[MAX_ITEM_RDM_OPT]; // Saves the chance to activate each slot. (Hyroshima)
 
 public:
 	void apply( struct item& item );

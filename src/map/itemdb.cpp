@@ -4714,6 +4714,11 @@ void s_random_opt_group::apply( struct item& item ){
 
 	// Apply Must options
 	for( size_t i = 0; i < this->slots.size(); i++ ){
+		
+		// Check if there's a chance to activate the slot and test it. (Hyroshima)
+		if( this->rate[i] && (rnd()%10000 > this->rate[i]) )
+			continue;
+
 		// Try to apply an entry
 		for( size_t j = 0, max = this->slots[static_cast<uint16>(i)].size() * 3; j < max; j++ ){
 			std::shared_ptr<s_random_opt_group_entry> option = util::vector_random( this->slots[static_cast<uint16>(i)] );
@@ -4905,6 +4910,7 @@ uint64 RandomOptionGroupDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			}
 
 			uint16 slot;
+			uint16 value_rate = 0;
 
 			if (!this->asUInt16(slotNode, "Slot", slot))
 				return 0;
@@ -4918,6 +4924,10 @@ uint64 RandomOptionGroupDatabase::parseBodyNode(const ryml::NodeRef& node) {
 				this->invalidWarning(slotNode, "Random option slot does not contain Options node, skipping.\n");
 				return 0;
 			}
+			
+			if(this->nodeExists(slotNode, "Rate"))
+				if(this->asUInt16(slotNode, "Rate", value_rate))
+					;
 
 			std::vector<std::shared_ptr<s_random_opt_group_entry>> entries;
 			const auto& optionsNode = slotNode["Options"];
@@ -4931,6 +4941,10 @@ uint64 RandomOptionGroupDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			}
 
 			randopt->slots[slot - 1] = entries;
+			
+			if(value_rate)
+				randopt->rate[slot - 1] = value_rate;
+
 		}
 	}
 
