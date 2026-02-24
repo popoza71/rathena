@@ -79,6 +79,6 @@
 	{ "sonic_acceleration_dmg",					&battle_config.sonic_acceleration_dmg,			90,      0,      INT_MAX, },	//puppy
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
 
-	
+	{ "char_bonus_debug",						&battle_config.char_bonus_debug,        		0,      0,      1,              },
 	
 	{ "show_shadow_weapon",						&battle_config.show_shadow_weapon,				0, 0, 1, },

@@ -1716,6 +1716,17 @@ ACMD_FUNC(baselevelup)
 		status_calc_pc(sd, SCO_FORCE);
 		level*=-1;
 	}
+
+	if(sd->char_bonus.size()){
+		for(int i=0;i<sd->char_bonus.size();i++){
+			if(sd->char_bonus[i].charid == sd->status.char_id){
+				sd->char_bonus[i].level = sd->status.base_level;
+				break;
+			}
+		}
+		status_calc_pc(sd, SCO_FORCE);
+	}
+
 	sd->status.base_exp = 0;
 	clif_updatestatus(*sd, SP_STATUSPOINT);
 	clif_updatestatus(*sd, SP_TRAITPOINT);

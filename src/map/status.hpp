@@ -3964,6 +3964,73 @@ uint16 status_base_atk(const block_list *bl, const struct status_data *status, i
 // Status changes accessors for StatusChange database
 uint16 status_efst_get_bl_type(enum efst_type efst);
 
+// char bonus
+extern std::vector<int> sort_char_bonus;
+
+struct s_char_bonus {
+	uint16 jobid;
+	efst_type icon;
+	int16 level;
+	struct script_code *script;	//Default script for everything.
+
+	~s_char_bonus() {
+		if (this->script){
+			script_free_code(this->script);
+			this->script = nullptr;
+		}
+	}
+};
+
+class CharBonusDatabase : public TypesafeYamlDatabase<uint16, s_char_bonus> {
+public:
+	CharBonusDatabase() : TypesafeYamlDatabase( "CHAR_BONUS_DB", 1 ){
+
+	}
+
+	const std::string getDefaultLocation();
+	uint64 parseBodyNode(const ryml::NodeRef& node);
+	void loadingFinished() override;
+};
+
+extern CharBonusDatabase char_bonus_db;
+
+struct s_char_bonus_combo {
+	uint16 id;
+	std::vector<int> jobs;
+	int16 level;
+	script_code *script;
+
+	~s_char_bonus_combo() {
+		if (this->script) {
+			script_free_code(this->script);
+			this->script = nullptr;
+		}
+
+		this->jobs.clear();
+	}
+};
+
+class CharBonusComboDatabase : public TypesafeYamlDatabase<uint16, s_char_bonus_combo> {
+private:
+	uint16 combo_num;
+	uint16 find_combo_id( const std::vector<int>& jobs);
+
+public:
+	CharBonusComboDatabase() : TypesafeYamlDatabase("CHAR_BOUNS_COMBO_DB", 1) {
+
+	}
+
+	void clear() override{
+		TypesafeYamlDatabase::clear();
+		this->combo_num = 0;
+	}
+	const std::string getDefaultLocation();
+	uint64 parseBodyNode(const ryml::NodeRef& node);
+};
+
+extern CharBonusComboDatabase char_bonus_combo_db;
+// char bonus
+
 //custom buff
 struct s_custom_buff {
 	uint16 sc_id;

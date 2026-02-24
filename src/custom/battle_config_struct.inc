@@ -80,6 +80,7 @@
 	int32 sonic_acceleration_dmg;
 	int32 backstab_dagger_hit;
 
-	
+	int32 char_bonus_debug;
+
 	int32 show_shadow_weapon;
 	

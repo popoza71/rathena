@@ -2602,6 +2602,58 @@ bool pc_set_hate_mob(map_session_data *sd, int32 pos, block_list *bl)
 	return true;
 }
 
+void load_char_bonus_data(map_session_data& sd)
+{
+	sd.char_bonus.clear();
+
+	SqlStmt stmt{ *mmysql_handle };
+
+	if (SQL_ERROR == stmt.Prepare(
+		"SELECT `char_id`,`class`,`base_level` "
+		"FROM `char` WHERE `account_id` = ?"
+	)) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	int32 account_id = sd.status.account_id;
+	if (SQL_ERROR == stmt.BindParam(0, SQLDT_INT32, &account_id, sizeof(account_id))) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	if (SQL_ERROR == stmt.Execute()) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	// ✅ bind ให้ตรงชนิดจริงใน table:
+	// char_id = INT(11) => int32
+	// class, base_level = SMALLINT => int16 (ปลอดภัยสุด)
+	int32 char_id = 0;
+	int16 job_id = 0;
+	int16 level = 0;
+
+	if (SQL_ERROR == stmt.BindColumn(0, SQLDT_INT32, &char_id, sizeof(char_id), nullptr, nullptr) ||
+		SQL_ERROR == stmt.BindColumn(1, SQLDT_INT16, &job_id, sizeof(job_id), nullptr, nullptr) ||
+		SQL_ERROR == stmt.BindColumn(2, SQLDT_INT16, &level, sizeof(level), nullptr, nullptr)) {
+		SqlStmt_ShowDebug(stmt);
+		return;
+	}
+
+	while (SQL_SUCCESS == stmt.NextRow()) {
+		s_char_data row{};
+		row.charid = char_id;
+		row.jobid = (int32)job_id; // ถ้า struct ของคุณเป็น int32 ก็ cast ได้
+		row.level = (int32)level;
+		sd.char_bonus.push_back(row);
+	}
+
+	if (battle_config.char_bonus_debug) {
+		ShowDebug("Char Bonus: Account %d | Count: %d\n", account_id, (int)sd.char_bonus.size());
+	}
+}
+
 /*==========================================
  * Invoked once after the char/account/account2 registry variables are received. [Skotlex]
  * We didn't receive item information at this point so DO NOT attempt to do item operations here.
@@ -2746,6 +2798,8 @@ void pc_reg_received(map_session_data *sd)
 		sd->achievement_data.achievements = nullptr;
 		intif_request_achievements(sd->status.char_id);
 	}
+
+	load_char_bonus_data(*sd); // Load bonus data
 
 	if (sd->state.connect_new == 0 && sd->fd) { //Character already loaded map! Gotta trigger LoadEndAck manually.
 		sd->state.connect_new = 1;
@@ -8642,6 +8696,15 @@ int32 pc_checkbaselevelup(map_session_data *sd) {
 
 	if (battle_config.pet_lv_rate && sd->pd)	//<Skotlex> update pet's level
 		status_calc_pet(sd->pd,SCO_NONE);
+
+	if(sd->char_bonus.size()){
+		for(int i=0;i<sd->char_bonus.size();i++){
+			if(sd->char_bonus[i].charid == sd->status.char_id){
+				sd->char_bonus[i].level = sd->status.base_level;
+				break;
+			}
+		}
+	}
 
 	clif_updatestatus(*sd,SP_STATUSPOINT);
 	clif_updatestatus(*sd,SP_TRAITPOINT);
@@ -16570,6 +16633,73 @@ void pc_collection_update(struct s_storage *stor, map_session_data &sd) {
 	}
 
 	sd.state.collection_flag = PCCOLLECTION_CLEAR;
+}
+
+// Char bonus functions
+void pc_remove_char_bonus(map_session_data *sd)
+{
+	nullpo_retv(sd);
+	for(const auto &bonus : char_bonus_db) {
+		clif_status_load(sd, bonus.second->icon, 0);
+	}
+}
+
+void pc_char_pass(map_session_data *sd)
+{
+	nullpo_retv(sd);
+	// clear old SC icons
+	if(char_bonus_db.size()){
+		for(const auto &bonus : char_bonus_db) {
+			if(bonus.second->icon != EFST_BLANK)
+				clif_status_load(sd, bonus.second->icon, 0);
+		}
+	}
+
+	if(sd->char_bonus.size()){
+		for(const auto &bonus_db : char_bonus_db) {
+			for(const auto &sd_data : sd->char_bonus) {
+				if(bonus_db.second->jobid == JOB_ALL && sd->status.base_level >= bonus_db.second->level) {
+
+					if(bonus_db.second->icon != EFST_BLANK)
+						clif_status_load(sd, bonus_db.second->icon, 1);
+
+					if(bonus_db.second->script)
+						run_script(bonus_db.second->script, 0, sd->id,0);					
+				}
+
+				if(bonus_db.second->jobid == sd_data.jobid && sd_data.level >= bonus_db.second->level) {
+
+					if(bonus_db.second->icon != EFST_BLANK)
+						clif_status_load(sd, bonus_db.second->icon, 1);
+
+					if(bonus_db.second->script)
+						run_script(bonus_db.second->script, 0, sd->id,0);					
+				}
+			}
+		}
+	}
+
+	// char bonus combo
+	if(sd->char_bonus.size() && char_bonus_combo_db.size()){
+		for(const auto &combos : char_bonus_combo_db) {
+			int bonus_check = 0;
+			for(const auto &job_id : combos.second->jobs) {
+				for(const auto &char_data : sd->char_bonus) {
+					if(job_id == char_data.jobid && char_data.level >= combos.second->level) {
+						bonus_check++;
+					}
+					if(bonus_check == combos.second->jobs.size())
+						break;
+				}
+
+				if(bonus_check == combos.second->jobs.size()){
+					if(combos.second->script){
+						run_script(combos.second->script, 0, sd->id,0);
+					}
+				}
+			}
+		}
+	}
 }
 
 

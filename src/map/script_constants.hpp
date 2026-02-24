@@ -249,6 +249,8 @@
 
 	export_constant(JOB_SKY_EMPEROR2);
 
+	export_constant(JOB_ALL);
+
 	export_constant(JOB_RUNE_KNIGHT_2ND);
 	export_constant(JOB_MECHANIC_2ND);
 	export_constant(JOB_GUILLOTINE_CROSS_2ND);

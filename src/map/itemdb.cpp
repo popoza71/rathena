@@ -4925,9 +4925,10 @@ uint64 RandomOptionGroupDatabase::parseBodyNode(const ryml::NodeRef& node) {
 				return 0;
 			}
 			
-			if(this->nodeExists(slotNode, "Rate"))
-				if(this->asUInt16(slotNode, "Rate", value_rate))
-					;
+			if (this->nodeExists(slotNode, "Rate")) {
+				if (!this->asUInt16(slotNode, "Rate", value_rate)) {
+				}
+			}
 
 			std::vector<std::shared_ptr<s_random_opt_group_entry>> entries;
 			const auto& optionsNode = slotNode["Options"];

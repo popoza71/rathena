@@ -1110,6 +1110,8 @@ enum e_job {
 
 	JOB_SECOND_JOB_END = 4350,
 
+	JOB_ALL = 9999,
+
 	JOB_MAX,
 };
 

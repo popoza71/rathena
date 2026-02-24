@@ -398,6 +398,12 @@ struct s_qi_display {
 	e_questinfo_markcolor color;
 };
 
+struct s_char_data {
+	int32 charid;
+	int16 jobid;
+	int16 level;
+};
+
 class map_session_data : public block_list {
 public:
 	struct unit_data ud;
@@ -518,6 +524,8 @@ public:
 	struct s_storage storage, premiumStorage;
 	struct s_storage inventory;
 	struct s_storage cart;
+
+	std::vector<s_char_data> char_bonus;
 
 	struct item_data* inventory_data[MAX_INVENTORY]; // direct pointers to itemdb entries (faster than doing item_id lookups)
 	int16 equip_index[EQI_MAX];
@@ -1844,6 +1852,9 @@ void pc_macro_detector_disconnect(map_session_data &sd);
 // Macro Reporter
 void pc_macro_reporter_area_select(map_session_data &sd, const int16 x, const int16 y, const int8 radius);
 void pc_macro_reporter_process(map_session_data &sd, int32 reporter_account_id = -1);
+
+void pc_remove_char_bonus(map_session_data *sd);
+void pc_char_pass(map_session_data *sd);
 
 #ifdef MAP_GENERATOR
 void pc_reputation_generate();
