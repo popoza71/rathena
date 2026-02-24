@@ -283,7 +283,7 @@ struct weapon_data {
 
 
 	struct drain_data {
-		int16 rate; ///< Success rate 10000 = 100%
+		int16 rate; ///< Success rate 1000 = 100%
 		int16 per;  ///< Drain value/rate per attack
 	//} hp_drain_rate, sp_drain_rate;
 	} hp_drain_rate, sp_drain_rate, magic_hp_drain_rate, magic_sp_drain_rate;
