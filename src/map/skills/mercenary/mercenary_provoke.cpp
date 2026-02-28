@@ -3,12 +3,10 @@
 
 #include "mercenary_provoke.hpp"
 
-#include "map/battle.hpp"
 #include "map/clif.hpp"
 #include "map/mob.hpp"
 #include "map/pc.hpp"
 #include "map/status.hpp"
-#include "map/unit.hpp"
 
 SkillMercenaryProvoke::SkillMercenaryProvoke() : SkillImpl(MER_PROVOKE) {
 }
