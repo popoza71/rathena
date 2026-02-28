@@ -17195,78 +17195,80 @@ const std::string CharBonusDatabase::getDefaultLocation() {
  * @param node: YAML node containing the entry.
  * @return count of successfully parsed rows
  */
-uint64 CharBonusDatabase::parseBodyNode(const ryml::NodeRef &node){
+uint64 CharBonusDatabase::parseBodyNode(const ryml::NodeRef& node) {
 
-	if (!this->nodesExist(node, {"Job","LevelNeed","BonusScript"}))
+	if (!this->nodesExist(node, { "Job","LevelNeed","BonusScript" }))
 		return 0;
 
 	std::string jobname;
-
 	if (!this->asString(node, "Job", jobname))
 		return 0;
 
-	int64 constant;
+	int64 constant64;
 
-	if( !script_get_constant(( "JOB_"+jobname).c_str(),&constant)){
-		this->invalidWarning( node["Job"], "Unknown \"%s\" Job.\n",jobname.c_str());
+	if (!script_get_constant(("JOB_" + jobname).c_str(), &constant64)) {
+		this->invalidWarning(node["Job"], "Unknown \"%s\" Job.\n", jobname.c_str());
 		return 0;
 	}
 
-	std::shared_ptr<s_char_bonus> char_bonus = this->find(constant);
+	// ---- FIX: convert safely to the database key type (uint16) ----
+	if (constant64 < 0 || constant64 > UINT16_MAX) {
+		this->invalidWarning(node["Job"], "Job id %" PRId64 " is out of uint16 bounds.\n", constant64);
+		return 0;
+	}
+	uint16 jobid = static_cast<uint16>(constant64);
+
+	std::shared_ptr<s_char_bonus> char_bonus = this->find(jobid);
 	bool exists = char_bonus != nullptr;
 
 	if (!exists) {
-
-		if (!this->nodesExist(node, {"Job"}))
-			return 0;
-
 		char_bonus = std::make_shared<s_char_bonus>();
-		char_bonus->jobid = constant;
+		char_bonus->jobid = jobid;
 	}
 
+	// LevelNeed (int16) OK อยู่แล้ว
 	if (this->nodeExists(node, "LevelNeed")) {
 		int16 level;
-
 		if (!this->asInt16(node, "LevelNeed", level))
 			return 0;
 
-		if(level < 0 || level > MAX_LEVEL){
+		if (level < 0 || level > MAX_LEVEL) {
 			this->invalidWarning(node["LevelNeed"], "LevelNeed %d is out of bounds.\n", level);
 			return 0;
 		}
-
 		char_bonus->level = level;
-	}else{
+	}
+	else {
 		char_bonus->level = 0;
 	}
 
+	// Icon (efst_type มักเป็น enum underlying เล็ก ๆ) -> cast หลังเช็ค
 	if (this->nodeExists(node, "Icon")) {
 		std::string icon_name;
-
 		if (!this->asString(node, "Icon", icon_name))
 			return 0;
 
-		int64 constant;
-
-		if (!script_get_constant(icon_name.c_str(), &constant)) {
+		int64 icon64;
+		if (!script_get_constant(icon_name.c_str(), &icon64)) {
 			this->invalidWarning(node["Icon"], "Icon %s is invalid, defaulting to EFST_BLANK.\n", icon_name.c_str());
-			constant = EFST_BLANK;
+			icon64 = EFST_BLANK;
 		}
 
-		if (constant < EFST_BLANK || constant >= EFST_MAX) {
+		if (icon64 < EFST_BLANK || icon64 >= EFST_MAX) {
 			this->invalidWarning(node["Icon"], "Icon %s is out of bounds, defaulting to EFST_BLANK.\n", icon_name.c_str());
-			constant = EFST_BLANK;
+			icon64 = EFST_BLANK;
 		}
 
-		char_bonus->icon = static_cast<efst_type>(constant);
-	} else {
+		char_bonus->icon = static_cast<efst_type>(icon64);
+	}
+	else {
 		if (!exists)
 			char_bonus->icon = EFST_BLANK;
 	}
 
+	// BonusScript เหมือนเดิม
 	if (this->nodeExists(node, "BonusScript")) {
 		std::string script;
-
 		if (!this->asString(node, "BonusScript", script))
 			return 0;
 
@@ -17275,14 +17277,20 @@ uint64 CharBonusDatabase::parseBodyNode(const ryml::NodeRef &node){
 			char_bonus->script = nullptr;
 		}
 
-		char_bonus->script = parse_script(script.c_str(), this->getCurrentFile().c_str(), this->getLineNumber(node["BonusScript"]), SCRIPT_IGNORE_EXTERNAL_BRACKETS);
-	} else {
+		char_bonus->script = parse_script(
+			script.c_str(),
+			this->getCurrentFile().c_str(),
+			this->getLineNumber(node["BonusScript"]),
+			SCRIPT_IGNORE_EXTERNAL_BRACKETS
+		);
+	}
+	else {
 		if (!exists)
 			char_bonus->script = nullptr;
 	}
 
 	if (!exists) {
-		this->put(char_bonus->jobid, char_bonus);
+		this->put(jobid, char_bonus); // ---- FIX: key ใช้ jobid (uint16) ----
 	}
 
 	return 1;
