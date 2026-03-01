@@ -3996,7 +3996,7 @@ extern CharBonusDatabase char_bonus_db;
 
 struct s_char_bonus_combo {
 	uint16 id;
-	std::vector<int> jobs;
+	std::vector<int32_t> jobs;
 	int16 level;
 	script_code *script;
 
@@ -4013,7 +4013,7 @@ struct s_char_bonus_combo {
 class CharBonusComboDatabase : public TypesafeYamlDatabase<uint16, s_char_bonus_combo> {
 private:
 	uint16 combo_num;
-	uint16 find_combo_id( const std::vector<int>& jobs);
+	uint16 find_combo_id(const std::vector<int32_t>& jobs);
 
 public:
 	CharBonusComboDatabase() : TypesafeYamlDatabase("CHAR_BOUNS_COMBO_DB", 1) {

@@ -17317,7 +17317,7 @@ const std::string CharBonusComboDatabase::getDefaultLocation() {
 	return std::string(db_path) + "/custom/char_bonus_combos.yml";
 }
 
-uint16 CharBonusComboDatabase::find_combo_id( const std::vector<int>& jobs ){
+uint16 CharBonusComboDatabase::find_combo_id(const std::vector<int32_t>& jobs) {
 	for (const auto &it : *this) {
 		if (it.second->jobs == jobs) {
 			return it.first;
@@ -17332,7 +17332,7 @@ uint16 CharBonusComboDatabase::find_combo_id( const std::vector<int>& jobs ){
  * @return count of successfully parsed rows
  */
 uint64 CharBonusComboDatabase::parseBodyNode(const ryml::NodeRef& node) {
-	std::vector<std::vector<int>> combos_list;
+	std::vector<std::vector<int32_t>> combos_list;
 
 	if( !this->nodesExist( node, { "Combos" } ) ){
 		return 0;
@@ -17354,7 +17354,7 @@ uint64 CharBonusComboDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			return 0;
 		}
 
-		std::vector<int> jobs = {};
+		std::vector<int32_t> jobs;
 
 		for (const auto it : comboNode) {
 			std::string job_name;
@@ -17363,11 +17363,16 @@ uint64 CharBonusComboDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			int64 job_constant;
 
 			if( !script_get_constant(( "JOB_"+job_name).c_str(),&job_constant)){
-				this->invalidWarning(comboNode["Jobs"], "Unknown \"%s\" Job.\n",job_name.c_str());
+				this->invalidWarning(it, "Unknown \"%s\" Job.\n", job_name.c_str());
 				return 0;
 			}
 
-			jobs.push_back(job_constant);
+            if (job_constant < std::numeric_limits<int32_t>::min() ||
+                job_constant > std::numeric_limits<int32_t>::max()) {
+                this->invalidWarning(it, "Job constant out of int32 range: %lld\n", (long long)job_constant);
+                return 0;
+            }
+            jobs.push_back(static_cast<int32_t>(job_constant));
 		}
 
 		if (jobs.empty()) {
@@ -17442,19 +17447,19 @@ uint64 CharBonusComboDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			}
 		}
 
-		if( this->nodeExists( node, "LevelNeed" ) ){
-			uint32 level;
+        if( this->nodeExists( node, "LevelNeed" ) ){
+            int32 level;
 
-			if( !this->asUInt32(node, "LevelNeed", level ) ){
+            if( !this->asInt32(node, "LevelNeed", level ) ){
 				return 0;
 			}
 
-			if( level < 0){
-				this->invalidWarning( node["LevelNeed"], "LevelNeed %d is out of bounds.\n", level );
+            if( level < 1 /*|| level > MAX_LEVEL*/ ){
+                this->invalidWarning( node["LevelNeed"], "LevelNeed %d is out of bounds.\n", level );
 				return 0;
 			}
 
-			col_combo->level = level;
+			col_combo->level = static_cast<int16>(level);
 		}else{
 			col_combo->level = 1;
 		}

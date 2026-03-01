@@ -5091,9 +5091,6 @@ int32 skill_castend_nodamage_id (block_list *src, block_list *bl, uint16 skill_i
 		clif_skill_nodamage(src, *src, skill_id, skill_lv);
 		break;
 
-	case NPC_LAVAEVENT:
-		break;
-
 	default: {
 		std::shared_ptr<s_skill_db> skill = skill_db.find(skill_id);
 
@@ -5945,6 +5942,10 @@ int32 skill_castend_pos2(block_list* src, int32 x, int32 y, uint16 skill_id, uin
 				clif_skill_nodamage(src,*src,skill_id,skill_lv);
 			else
 				clif_skill_poseffect( *src, skill_id, skill_lv, x, y, tick );
+	}
+
+	if (skill_id == NPC_LAVAEVENT) {
+		return 0;
 	}
 
 	if (std::shared_ptr<s_skill_db> skill = skill_db.find(skill_id); skill != nullptr && skill->impl != nullptr) {
