@@ -19,6 +19,7 @@ void SkillSummonFlora::castendPos2(block_list* src, int32 x, int32 y, uint16 ski
 	if (md) {
 		md->master_id = src->id;
 		md->special_state.ai = ai;
+		md->special_state.summon = 1;
 		if( md->deletetimer != INVALID_TIMER )
 			delete_timer(md->deletetimer, mob_timer_delete);
 		md->deletetimer = add_timer (gettick() + skill_get_time(getSkillId(),skill_lv), mob_timer_delete, md->id, 0);

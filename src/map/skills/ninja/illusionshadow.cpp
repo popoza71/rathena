@@ -21,6 +21,7 @@ void SkillIllusionShadow::castendNoDamageId(block_list *src, block_list *target,
 		{
 			md2->master_id = src->id;
 			md2->special_state.ai = AI_ZANZOU;
+			md2->special_state.summon = 1;
 			if( md2->deletetimer != INVALID_TIMER )
 				delete_timer(md2->deletetimer, mob_timer_delete);
 			md2->deletetimer = add_timer (gettick() + skill_get_time(getSkillId(), skill_lv), mob_timer_delete, md2->id, 0);

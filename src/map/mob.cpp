@@ -3043,6 +3043,12 @@ void mob_damage(mob_data *md, block_list *src, int32 damage)
 	if (src != nullptr) { //Store total damage...
 		//Log damage
 		mob_log_damage(md, src, static_cast<int64>(damage));
+		// pp autoattack
+		if(src->type == BL_PC){
+			map_session_data *sd = (map_session_data *)src;
+			sd->aa.last_attack = gettick();
+		}
+		// pp autoattack
 	}
 
 	if (battle_config.show_mob_info&3)
@@ -3775,6 +3781,29 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 
 			//drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md);
 			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
+
+			// pp autoattack
+			if(battle_config.autoattack_reduce_droprate && mvp_sd && mvp_sd->sc.getSCE(SC_AUTOATTACK)){
+
+				if(it->type==IT_HEALING && battle_config.autoattack_reduce_mode&AA_HEALING)
+					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+
+				if(it->type==IT_USABLE && battle_config.autoattack_reduce_mode&AA_USABLE)
+					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+
+				if((it->type==IT_ETC || it->type==IT_AMMO) && battle_config.autoattack_reduce_mode&AA_ETC)
+					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+
+				if(it->type==IT_ARMOR && battle_config.autoattack_reduce_mode&AA_ARMOR)
+					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+
+				if(it->type==IT_WEAPON && battle_config.autoattack_reduce_mode&AA_WEAPON)
+					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+
+				if(it->type==IT_CARD && battle_config.autoattack_reduce_mode&AA_CARD)
+					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+			}
+			// pp autoattack
 
 			// attempt to drop the item
 			if (rnd() % 10000 >= drop_rate)

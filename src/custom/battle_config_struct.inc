@@ -84,3 +84,34 @@
 
 	int32 show_shadow_weapon;
 	
+	// auto attack
+	int32 autoattack_skillheal;
+	int32 autoattack_item_potion;
+	int32 autoattack_sittorest;
+	int32 autoattack_skill_attack;
+	int32 autoattack_skill_buff;
+	int32 autoattack_item_buff;
+	int32 autoattack_teleport;
+	int32 autoattack_item_pickup;
+	int32 autoattack_mselection;
+	int32 autoattack_item_range_detection;
+	int32 autoattack_mob_detection;
+	int32 autoattack_move;
+	int32 autoattack_move_type;
+	int32 autoattack_interval_timer;
+	int32 autoattack_pickup_delay;
+	int32 autoattack_clean_logout;
+	int32 autoattack_hateffect;
+	int32 autoattack_skill_rate_default;
+	int32 autoattack_reduce_droprate;
+	int32 autoattack_reduce_mode;
+	int32 autoattack_max_moblist;
+	int32 autoattack_max_itemlist;
+	int32 autoattack_steal_reduce_rate;
+	int32 autoattack_max_time_per_mob;
+	int32 autoattack_mob_struck;
+	int32 autoattack_quiver_check;
+	int32 autoattack_max_flee_mob;
+	int32 autoattack_gunslinger_conflip_fix;
+	int32 autoattack_coinflip_coin;
+	int32 autoattack_chaincombo_finnish;

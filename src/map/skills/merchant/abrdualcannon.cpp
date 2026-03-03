@@ -19,6 +19,7 @@ void SkillAbrDualCannon::castendNoDamageId(block_list* src, block_list* target, 
 	if (md) {
 		md->master_id = src->id;
 		md->special_state.ai = AI_ABR;
+		md->special_state.summon = 1;
 
 		if (md->deletetimer != INVALID_TIMER)
 			delete_timer(md->deletetimer, mob_timer_delete);

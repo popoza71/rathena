@@ -29,6 +29,7 @@ void SkillSummonLegion::castendNoDamageId(block_list *src, block_list *target, u
 		if (sum_md) {
 			sum_md->master_id = src->id;
 			sum_md->special_state.ai = AI_LEGION;
+			sum_md->special_state.summon = 1;
 			if (sum_md->deletetimer != INVALID_TIMER) {
 				delete_timer(sum_md->deletetimer, mob_timer_delete);
 			}

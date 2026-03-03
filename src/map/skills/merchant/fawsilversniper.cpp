@@ -15,6 +15,7 @@ void SkillFawSilverSniper::castendPos2(block_list* src, int32 x, int32 y, uint16
 	if (md) {
 		md->master_id = src->id;
 		md->special_state.ai = AI_FAW;
+		md->special_state.summon = 1;
 		if (md->deletetimer != INVALID_TIMER) {
 			delete_timer(md->deletetimer, mob_timer_delete);
 		}

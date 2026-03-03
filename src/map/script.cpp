@@ -13,6 +13,10 @@
 #include <cmath>
 #include <csetjmp>
 #include <cstdlib> // atoi, strtol, strtoll, exit
+#include <sstream>
+#include <string>
+#include <vector>
+ 
 
 #ifdef PCRE_SUPPORT
 #include <pcre.h> // preg_match
@@ -27807,6 +27811,7 @@ BUILDIN_FUNC(mesitemicon){
 
 	return SCRIPT_CMD_SUCCESS;
 }
+
 
 #include <custom/script.inc>
 

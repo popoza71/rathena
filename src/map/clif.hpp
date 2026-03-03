@@ -239,6 +239,9 @@ enum send_target : uint8_t {
 	BG_AREA_WOS,
 
 	CLAN,				// Clan System
+
+	AREA_AUTOATTACK_WOS, /// area autoattack without self // pp autoattack
+
 };
 
 enum broadcast_flags : uint8_t {
@@ -1511,5 +1514,11 @@ void clif_specialpopup(const map_session_data& sd, int32 id);
 
 //[puppy] RefineUI Options
 std::string clif_hide_name(const char* original_name);
+
+// pp autoattack
+int32 clif_getareachar(struct block_list* bl, va_list ap);
+void clif_autoattack_effect(struct block_list* bl);
+void clif_autoattack_effect_off(struct block_list* bl);
+void clif_getareachar_unit(map_session_data * sd, struct block_list* bl);
 
 #endif /* CLIF_HPP */

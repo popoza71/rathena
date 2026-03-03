@@ -47,6 +47,7 @@ void SkillPlantCultivation::castendPos2(block_list* src, int32 x, int32 y, uint1
 			}
 
 			md = mob_once_spawn_sub(src, src->m, x, y, "--ja--", mob_id, "", SZ_SMALL, AI_NONE);
+			md->special_state.summon = 1;
 			if (!md)
 				return;
 			if ((t = skill_get_time(getSkillId(), skill_lv)) > 0)

@@ -1,0 +1,55 @@
+//===== AI Support SKill List Configulation Files =======================================
+//  Whispering Rain
+//= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+// Structure of Database:
+// skillname
+// EX. AL_HEAL
+//= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+//SM_PROVOKE
+SM_ENDURE
+//MG_SIGHT
+//MG_SAFETYWALL
+//AL_RUWACH
+//AL_PNEUMA
+AL_INCAGI
+//AL_CRUCIS
+AL_ANGELUS
+AL_BLESSING
+//AL_CURE
+ASC_EDP
+//AL_HEAL
+
+KN_TWOHANDQUICKEN
+
+AC_CONCENTRATION
+
+MO_CALLSPIRITS
+
+SA_AUTOSPELL
+
+GS_GLITTERING
+
+SC_AUTOSHADOWSPELL
+
+AS_ENCHANTPOISON
+
+// Blacksmith
+//
+BS_ADRENALINE
+BS_WEAPONPERFECT
+BS_OVERTHRUST
+BS_MAXIMIZE
+MC_LOUD
+
+//Priest
+//
+PR_IMPOSITIO
+PR_ASPERSIO
+PR_KYRIE
+PR_GLORIA
+PR_MAGNIFICAT
+
+MG_ENERGYCOAT
+
+CR_AUTOGUARD
+CR_SPEARQUICKEN
