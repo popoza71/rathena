@@ -12,6 +12,7 @@
 
 BUILDIN_DEF(recal_status,""),
 BUILDIN_DEF(magnus_all, "i"),
+BUILDIN_DEF(grandcross_nodmg_myself, "i"), // puppy grandcross_nodmg_myself
 
 BUILDIN_DEF(getmapmoblist, ""), //puppy
 

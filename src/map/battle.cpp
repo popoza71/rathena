@@ -6669,10 +6669,24 @@ struct Damage battle_calc_magic_attack(block_list *src,block_list *target,uint16
 			case NPC_GRANDDARKNESS:
 				if (src == target) {
 					// Grand Cross on self first applies attr_fix, then cardfix and finally halves the damage
-					if (src->type == BL_PC)
-						ad.damage = ad.damage / 2;
-					else
+					//if (src->type == BL_PC)
+					//	ad.damage = ad.damage / 2;
+					//else
+					//	ad.damage = 0;
+
+					// puppy grandcross_nodmg_myself
+					if (tsd && tsd->state.grandcross_nodmg_myself) {
 						ad.damage = 0;
+					}
+					//if (src->type == BL_PC)
+					else if (src->type == BL_PC) {
+						ad.damage = ad.damage / 2;
+					}
+					else {
+						ad.damage = 0;
+					}
+					// puppy grandcross_nodmg_myself
+
 				}
 				else
 					// Grand Cross on target applies attr_fix, then cardfix and then attr_fix a second time

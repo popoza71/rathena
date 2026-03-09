@@ -52,6 +52,27 @@ BUILDIN_FUNC(magnus_all)
 	return SCRIPT_CMD_SUCCESS;
 }
 
+/*
+	grandcross_nodmg_myself(0/1);
+	1 = magnus all race
+	0 = default behavior
+*/
+BUILDIN_FUNC(grandcross_nodmg_myself)
+{
+	map_session_data *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushint(st,0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	if(script_getnum(st,2) == 1)
+		sd->state.grandcross_nodmg_myself = true;
+	else
+		sd->state.grandcross_nodmg_myself = false;
+
+	return SCRIPT_CMD_SUCCESS;
+}
 
 // === BEGIN: getmapmoblist ===
 BUILDIN_FUNC(getmapmoblist)
