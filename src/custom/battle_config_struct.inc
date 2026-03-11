@@ -92,6 +92,7 @@
 	int32 autoattack_skill_buff;
 	int32 autoattack_item_buff;
 	int32 autoattack_teleport;
+	int32 autoattack_teleport_by_skill;
 	int32 autoattack_item_pickup;
 	int32 autoattack_mselection;
 	int32 autoattack_item_range_detection;

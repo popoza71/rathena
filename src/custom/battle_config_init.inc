@@ -91,6 +91,7 @@
 	{ "autoattack_skill_buff",				&battle_config.autoattack_skill_buff,			1,		0,		1,				},
 	{ "autoattack_item_buff",				&battle_config.autoattack_item_buff,			1,		0,		1,				},
 	{ "autoattack_teleport",				&battle_config.autoattack_teleport,				1,		0,		1,				},
+	{ "autoattack_teleport_by_skill",		&battle_config.autoattack_teleport_by_skill,	1,		0,		1,				},	//puppy
 	{ "autoattack_item_pickup",				&battle_config.autoattack_item_pickup,			1,		0,		1,				},
 	{ "autoattack_mselection",				&battle_config.autoattack_mselection,			1,      1,      1,      		},
 	{ "autoattack_item_range_detection",	&battle_config.autoattack_item_range_detection,	15,		0,		30,				},

@@ -16695,12 +16695,14 @@ bool aa_teleport(map_session_data *sd)
 	if(sd->state.autotrade && sd->sc.getSCE(SC_AUTOATTACK))
 		return flywing;
 
-	if (!sd->aa.teleport.use_teleport && sd->status.sp > 20 && flywing == false){
-		if (pc_checkskill(sd, AL_TELEPORT) > 0){
-			skill_consume_requirement(sd,AL_TELEPORT,1,2);
-			pc_randomwarp(sd, CLR_TELEPORT);
-			status_heal(sd, 0, -(skill_get_sp(AL_TELEPORT, 1)), 1);
-			flywing = true;
+	if (battle_config.autoattack_teleport_by_skill) {
+		if (!sd->aa.teleport.use_teleport && sd->status.sp > 20 && flywing == false){
+			if (pc_checkskill(sd, AL_TELEPORT) > 0){
+				skill_consume_requirement(sd,AL_TELEPORT,1,2);
+				pc_randomwarp(sd, CLR_TELEPORT);
+				status_heal(sd, 0, -(skill_get_sp(AL_TELEPORT, 1)), 1);
+				flywing = true;
+			}
 		}
 	}
 
