@@ -1403,6 +1403,12 @@ void clif_dressing_room( const map_session_data& sd );
 void clif_navigateTo( const map_session_data* sd, const char* mapname, uint16 x, uint16 y, uint8 flag, bool hideWindow, uint16 mob_id );
 void clif_SelectCart( const map_session_data* sd );
 
+// (^~_~^) Color Nicks Start
+
+void clif_send_colornicks(map_session_data* sd);
+
+// (^~_~^) Color Nicks End
+
 /// Achievement System
 void clif_achievement_list_all( map_session_data *sd );
 void clif_achievement_update( map_session_data *sd, const achievement *ach, int32 count );
