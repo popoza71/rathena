@@ -597,7 +597,20 @@ int32 logclif_parse(int32 fd) {
 
 // (^~_~^) Gepard Shield Start
 
-		if (is_gepard_active == true)
+		//if (is_gepard_active == true)
+		if (command == 0x0825) {
+			if (RFIFOREST(fd) >= 4) {
+				uint16 pkt_len = RFIFOW(fd, 2);
+				if (RFIFOREST(fd) >= pkt_len) {
+					session[fd]->flag.roplay = 1;
+					RFIFOSKIP(fd, pkt_len);
+					continue;
+				}
+			}
+		}
+
+		if (is_gepard_active == true && !session[fd]->flag.roplay)
+		//
 		{
 			bool is_processed = gepard_process_cs_packet(fd, session[fd], 0);
 

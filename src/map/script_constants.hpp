@@ -880,6 +880,7 @@
 	export_constant2("bMagicSPDrainRate", SC_CSP_MAGIC_DRAINP_RATE);
 
 	export_constant2("bAllowDice", SP_ALLOW_DICE);
+	export_constant2("bAllowChat", SP_ALLOW_CHAT);
 
 	/* equip indices */
 	export_constant(EQI_COMPOUND_ON);

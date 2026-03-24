@@ -608,6 +608,7 @@ public:
 		uint32 no_walk_delay : 1;
 
 		uint32 allow_dice : 1;
+		uint32 allow_chat : 1;
 
 	} special_state;
 	uint32 login_id1, login_id2;

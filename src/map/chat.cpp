@@ -91,7 +91,8 @@ int32 chat_createpcchat(map_session_data* sd, const char* title, const char* pas
 		return 0; //Can't create chatrooms on this map.
 	}
 
-	if( map_getcell(sd->m,sd->x,sd->y,CELL_CHKNOCHAT) ) {
+	//if( map_getcell(sd->m,sd->x,sd->y,CELL_CHKNOCHAT) ) {
+	if( map_getcell(sd->m,sd->x,sd->y,CELL_CHKNOCHAT) && (!sd->special_state.allow_chat)) {
 		clif_displaymessage (sd->fd, msg_txt(sd,665));
 		return 0;
 	}

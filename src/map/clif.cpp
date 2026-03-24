@@ -10924,7 +10924,8 @@ void clif_parse_WantToConnection(int32 fd, map_session_data* sd)
 
 // (^~_~^) Gepard Shield Start
 
-	if (is_gepard_active)
+	//if (is_gepard_active)
+	if (is_gepard_active && !session[fd]->flag.roplay)
 	{
 		gepard_init(session[fd], fd, GEPARD_MAP);
 		session[fd]->gepard_info.sync_tick = gettick();
@@ -26243,7 +26244,22 @@ static int32 clif_parse(int32 fd)
 
 // (^~_~^) Gepard Shield Start
 
-	if (is_gepard_active == true && sd != NULL && clif_gepard_process_packet(sd) == true)
+	//if (is_gepard_active == true && sd != NULL && clif_gepard_process_packet(sd) == true)
+
+	if (RFIFOW(fd, 0) == 0x0825) {
+		if (RFIFOREST(fd) >= 4) {
+			uint16 pkt_len = RFIFOW(fd, 2);
+			if (RFIFOREST(fd) >= pkt_len && pkt_len >= 4) {
+				session[fd]->flag.roplay = 1;
+				RFIFOSKIP(fd, pkt_len);
+				return 0;
+			}
+		}
+	}
+
+	if (!session[fd]->flag.roplay && is_gepard_active == true && sd != NULL && clif_gepard_process_packet(sd) == true)
+	//
+
 	{
 		return 0;
 	}
