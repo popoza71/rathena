@@ -352,7 +352,8 @@ int32 chrif_save(map_session_data *sd, int32 flag) {
 void chrif_aa_save(map_session_data* sd){
 
 	//aa_common_config
-	if( SQL_ERROR == Sql_Query( mmysql_handle, "REPLACE INTO `aa_common_config` (`char_id`,`stopmelee`,`pickup_item_config`,`aggressive_behavior`,`autositregen_conf`,`autositregen_maxhp`,`autositregen_minhp`,`autositregen_maxsp`,`autositregen_minsp`,`tp_use_teleport`,`tp_use_flywing`,`tp_min_hp`,`tp_delay_nomobmeet`,`skill_rate`,`teleport_boss`,`focus_mob`) VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)", sd->status.char_id, sd->aa.stopmelee, sd->aa.pickup_item_config, sd->aa.mobs.aggressive_behavior, sd->aa.autositregen.is_active, sd->aa.autositregen.max_hp, sd->aa.autositregen.min_hp, sd->aa.autositregen.max_sp, sd->aa.autositregen.min_sp, sd->aa.teleport.use_teleport, sd->aa.teleport.use_flywing, sd->aa.teleport.min_hp, sd->aa.teleport.delay_nomobmeet, sd->aa.skill_use_rate, sd->aa.teleport.facing_boss, sd->aa.focus_mob ) ){
+	if (SQL_ERROR == Sql_Query( mmysql_handle, "REPLACE INTO `aa_common_config` (`char_id`,`stopmelee`,`pickup_item_config`,`aggressive_behavior`,`autositregen_conf`,`autositregen_maxhp`,`autositregen_minhp`,`autositregen_maxsp`,`autositregen_minsp`,`tp_use_teleport`,`tp_use_flywing`,`tp_min_hp`,`tp_delay_nomobmeet`,`skill_rate`,`teleport_boss`,`focus_mob`,`flee_overwhelm`) VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)", sd->status.char_id, sd->aa.stopmelee, sd->aa.pickup_item_config, sd->aa.mobs.aggressive_behavior, sd->aa.autositregen.is_active, sd->aa.autositregen.max_hp, sd->aa.autositregen.min_hp, sd->aa.autositregen.max_sp, sd->aa.autositregen.min_sp, sd->aa.teleport.use_teleport, sd->aa.teleport.use_flywing, sd->aa.teleport.min_hp, sd->aa.teleport.delay_nomobmeet, sd->aa.skill_use_rate, sd->aa.teleport.facing_boss, sd->aa.focus_mob, sd->aa.flee_overwhelm)) {
+
 		Sql_ShowDebug(mmysql_handle);
 	}
 

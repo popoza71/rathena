@@ -81,6 +81,7 @@
 	int32 backstab_dagger_hit;
 
 	int32 char_bonus_debug;
+	int32 char_bonus_same_job_limit;
 
 	int32 show_shadow_weapon;
 	

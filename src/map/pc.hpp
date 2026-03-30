@@ -496,6 +496,7 @@ struct s_autoattack {
 	std::vector<s_autobuffitems> autobuffitems;
 	std::vector<t_itemid> pickup_item_id;
 	std::vector<uint16> flee_mobs;
+	int flee_overwhelm;
 };
 
 struct s_char_data {

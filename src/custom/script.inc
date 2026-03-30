@@ -683,6 +683,10 @@ BUILDIN_FUNC(autoattackintinfo)
 			script_pushint(st, num);
 			break;
 
+        case GET_INFO_FLEE_OVERWHELM:
+            script_pushint(st, sd->aa.flee_overwhelm);
+            break;
+
 		case GET_INFO_FOCUS_MOB:
 			script_pushint(st, sd->aa.focus_mob);
 			break;
@@ -1100,6 +1104,17 @@ BUILDIN_FUNC(autoattackset)
 					sd->aa.focus_mob = std::stoi(result.at(1));
 				}
 				break;
+
+            case GET_INFO_FLEE_OVERWHELM:
+                // รูปแบบ: autoattackset("24;<threshold>")
+                if (result.size() >= 2) {
+                    int th = std::stoi(result.at(1));
+                    if (th < 0) th = 0;
+                    // ตั้งเพดานพื้นฐาน เช่น ไม่เกิน 50 (หรือเพิ่ม battleconf ใหม่ในภายหลัง)
+                    if (th > 50) th = 50;
+                    sd->aa.flee_overwhelm = th;
+                }
+                break;
 		}
 	}
 

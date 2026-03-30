@@ -2573,7 +2573,7 @@ void pc_aa_load(map_session_data* sd)
 	// aa_common_config
 	if (Sql_Query(mmysql_handle,"SELECT `stopmelee`,`pickup_item_config`,`aggressive_behavior`,`autositregen_conf`,"
 		"`autositregen_maxhp`,`autositregen_minhp`,`autositregen_maxsp`,`autositregen_minsp`,`tp_use_teleport`,"
-		"`tp_use_flywing`,`tp_min_hp`,`tp_delay_nomobmeet`,`skill_rate`,`teleport_boss`,`focus_mob` FROM `aa_common_config` WHERE `char_id` = %d",
+		"`tp_use_flywing`,`tp_min_hp`,`tp_delay_nomobmeet`,`skill_rate`,`teleport_boss`,`focus_mob`,`flee_overwhelm` FROM `aa_common_config` WHERE `char_id` = %d",
 		sd->status.char_id ) != SQL_SUCCESS ){
 		Sql_ShowDebug(mmysql_handle);
 		return;
@@ -2597,6 +2597,10 @@ void pc_aa_load(map_session_data* sd)
 			Sql_GetData(mmysql_handle, 12, &data, NULL); sd->aa.skill_use_rate 				= atoi(data);
 			Sql_GetData(mmysql_handle, 13, &data, NULL); sd->aa.teleport.facing_boss		= atoi(data);
 			Sql_GetData(mmysql_handle, 14, &data, NULL); sd->aa.focus_mob					= atoi(data);
+			// flee_overwhelm (index 15)
+			Sql_GetData(mmysql_handle, 15, &data, NULL);
+			sd->aa.flee_overwhelm = (data && *data) ? atoi(data) : 0;
+			if (sd->aa.flee_overwhelm < 0) sd->aa.flee_overwhelm = 0;
 		}
 	} else {
 		sd->aa.stopmelee 					= 0;
@@ -2614,6 +2618,7 @@ void pc_aa_load(map_session_data* sd)
 		sd->aa.teleport.delay_nomobmeet 	= 0;
 		sd->aa.teleport.facing_boss			= true;
 		sd->aa.focus_mob 					= true;
+		sd->aa.flee_overwhelm				= 0;
 	}
 
 	Sql_FreeResult(mmysql_handle);
@@ -7149,9 +7154,16 @@ int32 pc_useitem(map_session_data *sd,int32 n)
 
 	run_script( script, 0, sd->id, fake_nd->id );
 
-	if( sd->st != nullptr ){
-		script_free_state( sd->st );
-		sd->st = nullptr;
+	//if( sd->st != nullptr ){
+	//	script_free_state( sd->st );
+	//	sd->st = nullptr;
+	//}
+
+	if (sd->st != nullptr) {
+		if (sd->st->state == END) {
+			script_free_state(sd->st);
+			sd->st = nullptr;
+		}
 	}
 
 	// If an old script is present
@@ -16891,25 +16903,25 @@ void pc_char_pass(map_session_data *sd)
 		}
 	}
 
-	if(sd->char_bonus.size()){
-		for(const auto &bonus_db : char_bonus_db) {
-			for(const auto &sd_data : sd->char_bonus) {
-				if(bonus_db.second->jobid == JOB_ALL && sd->status.base_level >= bonus_db.second->level) {
+	if (sd->char_bonus.size()) {
+		for (const auto& bonus_db : char_bonus_db) {
+			for (const auto& sd_data : sd->char_bonus) {
+				if (bonus_db.second->jobid == JOB_ALL && sd->status.base_level >= bonus_db.second->level) {
 
-					if(bonus_db.second->icon != EFST_BLANK)
+					if (bonus_db.second->icon != EFST_BLANK)
 						clif_status_load(sd, bonus_db.second->icon, 1);
 
-					if(bonus_db.second->script)
-						run_script(bonus_db.second->script, 0, sd->id,0);					
+					if (bonus_db.second->script)
+						run_script(bonus_db.second->script, 0, sd->id, 0);
 				}
 
-				if(bonus_db.second->jobid == sd_data.jobid && sd_data.level >= bonus_db.second->level) {
+				if (bonus_db.second->jobid == sd_data.jobid && sd_data.level >= bonus_db.second->level) {
 
-					if(bonus_db.second->icon != EFST_BLANK)
+					if (bonus_db.second->icon != EFST_BLANK)
 						clif_status_load(sd, bonus_db.second->icon, 1);
 
-					if(bonus_db.second->script)
-						run_script(bonus_db.second->script, 0, sd->id,0);					
+					if (bonus_db.second->script)
+						run_script(bonus_db.second->script, 0, sd->id, 0);
 				}
 			}
 		}

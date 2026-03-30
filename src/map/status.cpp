@@ -14563,28 +14563,35 @@ TIMER_FUNC(status_change_timer){
 			}
 
 			//Buff items
-			if(battle_config.autoattack_item_buff){
-				if(sd->aa.autobuffitems.size()){
-					for(auto &itAutobuffitem : sd->aa.autobuffitems){
-						if(last_tick >= itAutobuffitem.delay && itAutobuffitem.is_active){
-							at_index = pc_search_inventory(sd, itAutobuffitem.item_id);
-
-							if (at_index >= 0 && pc_useitem(sd, at_index)){
-
-								struct s_ai_item_buff entry = {};
-								bool found = false;
-
-								for(const auto &it : ai_item_buff){
-									if(it.itemid == itAutobuffitem.item_id){
-										entry = it;
-										found = true;
-										break;
-									}
+			if (battle_config.autoattack_item_buff) {
+				if (!skip && !pc_issit(sd) && sd->aa.autobuffitems.size()) {
+					for (auto &itAutobuffitem : sd->aa.autobuffitems) {
+						if (!itAutobuffitem.is_active || last_tick < itAutobuffitem.delay)
+							continue;
+			
+						at_index = pc_search_inventory(sd, itAutobuffitem.item_id);
+						if (at_index < 0)
+							continue;
+			
+						if (pc_useitem(sd, at_index)) {
+							struct s_ai_item_buff entry = {};
+							bool found = false;
+			
+							for (const auto &it : ai_item_buff) {
+								if (it.itemid == itAutobuffitem.item_id) {
+									entry = it;
+									found = true;
+									break;
 								}
-
-								if(found)
-									itAutobuffitem.delay = last_tick + entry.duration;
 							}
+			
+							if (found)
+								itAutobuffitem.delay = last_tick + entry.duration;
+							else
+								itAutobuffitem.delay = last_tick + 1000; 
+			
+							skip = true; 
+							break; 
 						}
 					}
 				}
@@ -16584,9 +16591,31 @@ bool aa_check_target(map_session_data *sd, uint32 id)
 				return false;
 			}
 
-			if(sd->aa.teleport.facing_boss && bosstype == BOSSTYPE_MVP){
+			if (sd->aa.teleport.facing_boss && bosstype == BOSSTYPE_MVP) {
+				unit_stop_attack(sd);
+				unit_stop_walking(sd, 1);
+				unit_skillcastcancel(sd, 1);
 				aa_teleport(sd);
 				return false;
+			}
+
+			if (sd->aa.flee_overwhelm > 0) {
+				int nearby = 0;
+				map_foreachinrange(
+					[](block_list* bl, va_list ap)->int {
+						TBL_MOB* md = BL_CAST(BL_MOB, bl);
+						map_session_data* sd = va_arg(ap, map_session_data*);
+						int* cnt = va_arg(ap, int*);
+						if (!md || md->status.hp <= 0) return 0;
+						if (!battle_check_target(sd, bl, BCT_ENEMY)) return 0;
+						if (md->target_id == sd->id) (*cnt)++;  // นับตัวที่กำลังรุมผู้เล่น
+						return 0;
+					}, sd, AREA_SIZE, BL_MOB, sd, &nearby
+				);
+				if (nearby >= sd->aa.flee_overwhelm) {
+					aa_teleport(sd);
+					return false;
+				}
 			}
 
 			if(util::vector_exists(sd->aa.flee_mobs,md->mob_id)){

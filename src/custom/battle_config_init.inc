@@ -80,6 +80,7 @@
 	{ "backstab_dagger_hit",					&battle_config.backstab_dagger_hit,				2,      0,      INT_MAX, },	//puppy
 
 	{ "char_bonus_debug",						&battle_config.char_bonus_debug,        		0,      0,      1,              },
+	{ "char_bonus_same_job_limit",				&battle_config.char_bonus_same_job_limit,		0,		0,		INT_MAX,		},
 	
 	{ "show_shadow_weapon",						&battle_config.show_shadow_weapon,				0, 0, 1, },
 
