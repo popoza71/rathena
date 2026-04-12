@@ -3962,7 +3962,12 @@ e_purchase_result npc_barter_purchase( map_session_data& sd, std::shared_ptr<s_n
 				clif_messagecolor(&sd, color_table[COLOR_CYAN], ann_msg, false, SELF);
 
 				if(purchase.item->f_effect_id > -1)
-					clif_specialeffect(&sd, purchase.item->f_effect_id, SELF);
+					clif_specialeffect(&sd, purchase.item->f_effect_id, AREA);
+
+				if (purchase.item->announce) {
+					sprintf(ann_msg, msg_txt(NULL, 3014), sd.status.name, item_db.create_item_link(it).c_str());
+					intif_broadcast2(ann_msg, (int)strlen(ann_msg) + 1, 0xF770EE, FW_NORMAL, 12, 0, 0);
+				}
 			}
 
 			sd.state.craft_barter = false;

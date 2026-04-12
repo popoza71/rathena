@@ -4004,6 +4004,7 @@ bool aa_sphere_req(map_session_data* sd, uint16 skill_id, uint16 skill_lv);
 bool aa_autospell(map_session_data* sd, uint16 skill_id, uint16 skill_lv);
 bool aa_shadowspell(map_session_data* sd, uint16 skill_id, uint16 skill_lv);
 void autoattack_clear(map_session_data* sd);
+void aa_cancel_invincible(map_session_data* sd);
 
 // char bonus
 extern std::vector<int> sort_char_bonus;

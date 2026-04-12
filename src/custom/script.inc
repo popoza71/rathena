@@ -1137,11 +1137,33 @@ BUILDIN_FUNC(autoattackclear)
 		case GET_INFO_MOB:
 			sd->aa.mobs.id.clear();
 			break;
+
 		case GET_INFO_PICKUP_ITEM:
 			sd->aa.pickup_item_id.clear();
 			break;
+
 		case GET_INFO_FLEE_MOB:
 			sd->aa.flee_mobs.clear();
+			break;
+
+		case GET_INFO_HEAL:
+			sd->aa.autoheal.clear();
+			break;
+
+		case GET_INFO_POTION:
+			sd->aa.autopotion.clear();
+			break;
+
+		case GET_INFO_SUPPORT_SKILL:
+			sd->aa.autobuffskills.clear();
+			break;
+
+		case GET_INFO_ATTACK_SKILL:
+			sd->aa.autoattackskills.clear();
+			break;
+
+		case GET_INFO_BUFF_ITEM:
+			sd->aa.autobuffitems.clear();
 			break;
 	}
 

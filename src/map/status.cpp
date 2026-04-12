@@ -14408,8 +14408,10 @@ TIMER_FUNC(status_change_timer){
 						struct block_list *fitem_bl = map_id2bl(sd->aa.itempick_id);
 						if(fitem_bl){
 							struct flooritem_data* fitem = (struct flooritem_data *)fitem_bl;
-							if(!check_distance_bl(sd, fitem_bl, 2))
+							if (!check_distance_bl(sd, fitem_bl, 2)) {
+								aa_cancel_invincible(sd);
 								unit_walktobl(sd, fitem_bl, 1, 1);
+							}
 							else{
 								if(!sd->aa.last_pickup || DIFF_TICK(last_tick, sd->aa.last_pickup) > 0){
 									pc_takeitem(sd,fitem);
@@ -14455,6 +14457,7 @@ TIMER_FUNC(status_change_timer){
 							if(((status->hp * 100 / itAutoheal.min_hp) < sd->status.max_hp) && pc_checkskill(sd, itAutoheal.skill_id) >= itAutoheal.skill_lv)
 							{
 								if(last_tick >= itAutoheal.last_use){
+									aa_cancel_invincible(sd);
 									if(unit_skilluse_id(bl, bl->id, itAutoheal.skill_id, itAutoheal.skill_lv)){
 										itAutoheal.last_use = last_tick + + pc_get_skillcooldown(sd, itAutoheal.skill_id, itAutoheal.skill_lv);
 										skip = true;
@@ -14536,7 +14539,7 @@ TIMER_FUNC(status_change_timer){
 
 			//Buff skills
 			if(battle_config.autoattack_skill_buff){
-				if(!skip && !pc_issit(sd) && sd->aa.autobuffskills.size()){
+				if (!skip && !pc_issit(sd) && sd->aa.autobuffskills.size() && last_tick >= sd->aa.skill_cd) {
 					for(auto &itAutobuffskills : sd->aa.autobuffskills){
 						if(itAutobuffskills.is_active
 							&& !skill_isNotOk(itAutobuffskills.skill_id, *sd)
@@ -14553,9 +14556,16 @@ TIMER_FUNC(status_change_timer){
 							if(aa_shadowspell(sd,itAutobuffskills.skill_id,itAutobuffskills.skill_lv))
 								continue;
 
-							if(unit_skilluse_id(sd, sd->id, itAutobuffskills.skill_id, itAutobuffskills.skill_lv)){
-								sd->aa.skill_cd = itAutobuffskills.last_use = last_tick + skill_delayfix(sd, itAutobuffskills.skill_id, itAutobuffskills.skill_lv);
+							aa_cancel_invincible(sd);
+							if (unit_skilluse_id(sd, sd->id, itAutobuffskills.skill_id, itAutobuffskills.skill_lv)) {
+								t_tick next_delay = skill_delayfix(sd, itAutobuffskills.skill_id, itAutobuffskills.skill_lv);
+
+								if (next_delay < 500)
+									next_delay = 500;
+
+								sd->aa.skill_cd = itAutobuffskills.last_use = last_tick + next_delay;
 								skip = true;
+								break;
 							}
 						}
 					}
@@ -14643,25 +14653,30 @@ TIMER_FUNC(status_change_timer){
 											aa_skill_range = 2;
 
 										if (!check_distance_bl(sd, target, aa_skill_range)) {
+											aa_cancel_invincible(sd);
 											unit_walktobl(sd, target, aa_skill_range, 1);
 											continue;
 										}
 
 										if (skill_get_inf(itAutoattackskills.skill_id) & INF_ATTACK_SKILL || skill_get_inf(itAutoattackskills.skill_id) & INF_SUPPORT_SKILL) {
 
+											aa_cancel_invincible(sd);
 											if (!unit_skilluse_id(sd, sd->aa.target_id, itAutoattackskills.skill_id, itAutoattackskills.skill_lv))
 												continue;
 										} else if (skill_get_inf(itAutoattackskills.skill_id) & INF_GROUND_SKILL) {
 
+											aa_cancel_invincible(sd);
 											if (!unit_skilluse_pos(bl, target->x, target->y, itAutoattackskills.skill_id, itAutoattackskills.skill_lv))
 												continue;
 										}
 									} else if (skill_get_inf(itAutoattackskills.skill_id) & INF_SELF_SKILL) {
 										if (check_distance_bl(sd, target, 2)) {
 
+											aa_cancel_invincible(sd);
 											if (!unit_skilluse_id(sd, sd->id, itAutoattackskills.skill_id, itAutoattackskills.skill_lv))
 												continue;
 										} else {
+											aa_cancel_invincible(sd);
 											unit_walktobl(sd, target, 2, 1);
 											continue;
 										}
@@ -14677,6 +14692,7 @@ TIMER_FUNC(status_change_timer){
 				}
 
 				if(!sd->aa.stopmelee)
+				aa_cancel_invincible(sd);
 				unit_attack(bl, sd->aa.target_id, 1);
 			}
 
@@ -14722,29 +14738,36 @@ TIMER_FUNC(status_change_timer){
 						if (battle_config.autoattack_move_type && !dest_checked &&
 							(sd->aa.lastposition.dx != 0 || sd->aa.lastposition.dy != 0) &&
 							((tx != sd->x) || (ty != sd->y)) &&
-							map_getcell(sd->m, tx, ty, CELL_CHKPASS) &&
-							unit_walktoxy(sd, tx, ty, 0)) {
+							map_getcell(sd->m, tx, ty, CELL_CHKPASS)) {
 
-							sd->aa.last_move = last_tick;
-							add_position_to_history(sd);
-							break;
-						} else {
-							dest_checked = true; 
+							aa_cancel_invincible(sd);
+
+							if (unit_walktoxy(sd, tx, ty, 0)) {
+								sd->aa.last_move = last_tick;
+								add_position_to_history(sd);
+								break;
+							}
+						}
+						else {
+							dest_checked = true;
 						}
 
 						// Check if the target position is valid and move there
 						if (((x != sd->x) || (y != sd->y)) &&
-							map_getcell(sd->m, x, y, CELL_CHKPASS) &&
-							unit_walktoxy(sd, x, y, 0)) {
+							map_getcell(sd->m, x, y, CELL_CHKPASS)) {
 
-							sd->aa.last_move = last_tick;
-							add_position_to_history(sd);
+							aa_cancel_invincible(sd);
 
-							if (battle_config.autoattack_move_type) {
-								sd->aa.lastposition.dx = dx;
-								sd->aa.lastposition.dy = dy;
+							if (unit_walktoxy(sd, x, y, 0)) {
+								sd->aa.last_move = last_tick;
+								add_position_to_history(sd);
+
+								if (battle_config.autoattack_move_type) {
+									sd->aa.lastposition.dx = dx;
+									sd->aa.lastposition.dy = dy;
+								}
+								break;
 							}
-							break;
 						}
 					}
 				}
@@ -16636,6 +16659,11 @@ bool aa_check_target(map_session_data *sd, uint32 id)
 		}
 	}
 	return false;
+}
+
+void aa_cancel_invincible(map_session_data* sd) {
+	if (sd && sd->sc.getSCE(SC_AUTOATTACK))
+		pc_delinvincibletimer(sd);
 }
 
 int buildin_autoattack_sub(struct block_list *bl, va_list ap)

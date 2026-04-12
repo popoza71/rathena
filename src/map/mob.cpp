@@ -3783,25 +3783,27 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
 
 			// pp autoattack
-			if(battle_config.autoattack_reduce_droprate && mvp_sd && mvp_sd->sc.getSCE(SC_AUTOATTACK)){
+			// 1. คำนวณเรทดรอปปกติ
+			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
 
-				if(it->type==IT_HEALING && battle_config.autoattack_reduce_mode&AA_HEALING)
-					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+			// 2. กำหนดตัวละครที่จะเช็ค
+			map_session_data* target_sd = mvp_sd ? mvp_sd : (sd ? sd : first_sd);
 
-				if(it->type==IT_USABLE && battle_config.autoattack_reduce_mode&AA_USABLE)
-					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+			// 3. เริ่มระบบลดเรท
+			if (battle_config.autoattack_reduce_droprate && target_sd && target_sd->sc.getSCE(SC_AUTOATTACK)) {
 
-				if((it->type==IT_ETC || it->type==IT_AMMO) && battle_config.autoattack_reduce_mode&AA_ETC)
-					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
-
-				if(it->type==IT_ARMOR && battle_config.autoattack_reduce_mode&AA_ARMOR)
-					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
-
-				if(it->type==IT_WEAPON && battle_config.autoattack_reduce_mode&AA_WEAPON)
-					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
-
-				if(it->type==IT_CARD && battle_config.autoattack_reduce_mode&AA_CARD)
-					drop_rate = drop_rate * (100-battle_config.autoattack_reduce_droprate) / 100;
+				if (it->type == IT_HEALING && (battle_config.autoattack_reduce_mode & AA_HEALING))
+					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+				else if (it->type == IT_USABLE && (battle_config.autoattack_reduce_mode & AA_USABLE))
+					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+				else if ((it->type == IT_ETC || it->type == IT_AMMO) && (battle_config.autoattack_reduce_mode & AA_ETC))
+					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+				else if (it->type == IT_ARMOR && (battle_config.autoattack_reduce_mode & AA_ARMOR))
+					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+				else if (it->type == IT_WEAPON && (battle_config.autoattack_reduce_mode & AA_WEAPON))
+					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+				else if (it->type == IT_CARD && (battle_config.autoattack_reduce_mode & AA_CARD))
+					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
 			}
 			// pp autoattack
 

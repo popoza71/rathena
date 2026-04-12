@@ -16903,6 +16903,7 @@ void pc_char_pass(map_session_data *sd)
 		}
 	}
 
+	/*
 	if (sd->char_bonus.size()) {
 		for (const auto& bonus_db : char_bonus_db) {
 			for (const auto& sd_data : sd->char_bonus) {
@@ -16923,6 +16924,35 @@ void pc_char_pass(map_session_data *sd)
 					if (bonus_db.second->script)
 						run_script(bonus_db.second->script, 0, sd->id, 0);
 				}
+			}
+		}
+	}
+	*/
+	if (sd->char_bonus.size()) {
+		for (const auto& bonus_db : char_bonus_db) {
+			int count = 0;
+
+			for (const auto& sd_data : sd->char_bonus) {
+				if (bonus_db.second->jobid == JOB_ALL) {
+					if (sd->status.base_level >= bonus_db.second->level)
+						count = 1;
+					break;
+				}
+
+				if (bonus_db.second->jobid == sd_data.jobid && sd_data.level >= bonus_db.second->level)
+					count++;
+			}
+
+			if (battle_config.char_bonus_same_job_limit > 0 &&
+				count > battle_config.char_bonus_same_job_limit)
+				count = battle_config.char_bonus_same_job_limit;
+
+			for (int i = 0; i < count; i++) {
+				if (bonus_db.second->icon != EFST_BLANK)
+					clif_status_load(sd, bonus_db.second->icon, 1);
+
+				if (bonus_db.second->script)
+					run_script(bonus_db.second->script, 0, sd->id, 0);
 			}
 		}
 	}
