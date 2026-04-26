@@ -124,6 +124,212 @@ BUILDIN_FUNC(getmapmoblist)
 // === END: getmapmoblist ===
 
 
+// === BEGIN: AI menu list helpers ===
+static std::string aa_build_skill_menu_list(map_session_data* sd, const std::vector<uint16>& skill_list)
+{
+	if (!sd)
+		return "";
+
+	std::string result;
+	result.reserve(1024);
+
+	bool first = true;
+
+	for (const auto& skill_id : skill_list) {
+		if (skill_id == 0)
+			continue;
+
+		uint16 skill_lv = pc_checkskill(sd, skill_id);
+		if (skill_lv <= 0)
+			continue;
+
+		auto skill = skill_db.find(skill_id);
+		if (!skill)
+			continue;
+
+		char line[256];
+		// รูปแบบ: Name,ID,Level
+		snprintf(line, sizeof(line), "%s,%hu,%hu", skill->desc, skill_id, skill_lv);
+
+		if (!first)
+			result += ":";
+		first = false;
+		result += line;
+	}
+
+	return result;
+}
+
+static std::string aa_build_buff_item_menu_list(map_session_data* sd)
+{
+	if (!sd)
+		return "";
+
+	std::string result;
+	result.reserve(1024);
+
+	bool first = true;
+	std::vector<t_itemid> added;
+
+	for (int i = 0; i < MAX_INVENTORY; ++i) {
+		auto& inv = sd->inventory.u.items_inventory[i];
+
+		if (inv.nameid == 0 || inv.amount <= 0)
+			continue;
+
+		t_itemid item_id = inv.nameid;
+
+		// ต้องอยู่ใน ai_item_buff.txt เท่านั้น
+		auto it = std::find_if(ai_item_buff.begin(), ai_item_buff.end(),
+			[item_id](const s_ai_item_buff& entry) {
+				return entry.itemid == item_id;
+			});
+
+		if (it == ai_item_buff.end())
+			continue;
+
+		// กันไอเท็มซ้ำในเมนู
+		if (std::find(added.begin(), added.end(), item_id) != added.end())
+			continue;
+
+		added.push_back(item_id);
+
+		auto item_data = item_db.find(item_id);
+		if (!item_data)
+			continue;
+
+		int amount = 0;
+		for (int j = 0; j < MAX_INVENTORY; ++j) {
+			if (sd->inventory.u.items_inventory[j].nameid == item_id)
+				amount += sd->inventory.u.items_inventory[j].amount;
+		}
+
+		char line[256];
+		// รูปแบบ: Name,ID,Count
+		snprintf(line, sizeof(line), "%s,%u,%d",item_data->name.c_str(), item_id, amount);
+
+		if (!first)
+			result += ":";
+		first = false;
+		result += line;
+	}
+
+	return result;
+}
+
+BUILDIN_FUNC(getaihealskilllist)
+{
+	map_session_data* sd = map_id2sd(st->rid);
+	if (!sd) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	std::string result = aa_build_skill_menu_list(sd, skill_ai_heal);
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(getaiattackskilllist)
+{
+	map_session_data* sd = map_id2sd(st->rid);
+	if (!sd) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	std::string result = aa_build_skill_menu_list(sd, skill_ai_attack);
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(getaisupportskilllist)
+{
+	map_session_data* sd = map_id2sd(st->rid);
+	if (!sd) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	std::string result = aa_build_skill_menu_list(sd, skill_ai_support);
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(getaibuffitemlist)
+{
+	map_session_data* sd = map_id2sd(st->rid);
+	if (!sd) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	std::string result = aa_build_buff_item_menu_list(sd);
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(getaipotionlist)
+{
+	TBL_PC* sd;
+	std::shared_ptr<item_data> item_data;
+
+	if (!script_rid2sd(sd)) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	std::string result;
+	result.reserve(1024);
+
+	bool first = true;
+	std::vector<t_itemid> added;
+
+	for (int i = 0; i < MAX_INVENTORY; i++) {
+		if (sd->inventory.u.items_inventory[i].nameid == 0)
+			continue;
+
+		t_itemid item_id = sd->inventory.u.items_inventory[i].nameid;
+
+		item_data = item_db.find(item_id);
+		if (item_data == nullptr)
+			continue;
+
+		// ใช้ตรรกะเดียวกับระบบเก่า: แสดงเฉพาะไอเท็มประเภท HEALING
+		if (item_data->type != IT_HEALING)
+			continue;
+
+		// กันรายการซ้ำในเมนู
+		if (std::find(added.begin(), added.end(), item_id) != added.end())
+			continue;
+
+		added.push_back(item_id);
+
+		int amount = 0;
+		for (int j = 0; j < MAX_INVENTORY; j++) {
+			if (sd->inventory.u.items_inventory[j].nameid == item_id)
+				amount += sd->inventory.u.items_inventory[j].amount;
+		}
+
+		char line[256];
+		// รูปแบบ: Name,ID,Count
+		snprintf(line, sizeof(line), "%s,%u,%d",
+			item_data->name.c_str(), item_id, amount);
+
+		if (!first)
+			result += ":";
+		first = false;
+		result += line;
+	}
+
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+// === END: AI menu list helpers ===
+
+
+
 // pp autoattack
 /*
  * skillstrinfo(<skill id>)

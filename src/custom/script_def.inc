@@ -16,6 +16,12 @@ BUILDIN_DEF(grandcross_nodmg_myself, "i"), // puppy grandcross_nodmg_myself
 
 BUILDIN_DEF(getmapmoblist, ""), //puppy
 
+BUILDIN_DEF(getaihealskilllist, ""),
+BUILDIN_DEF(getaiattackskilllist, ""),
+BUILDIN_DEF(getaisupportskilllist, ""),
+BUILDIN_DEF(getaibuffitemlist, ""),
+BUILDIN_DEF(getaipotionlist, ""),
+
 BUILDIN_DEF(skillstrinfo,"v"),
 BUILDIN_DEF(skillintinfo,"ii"),
 BUILDIN_DEF(autoattackstrinfo,"i?"),
