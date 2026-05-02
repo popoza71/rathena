@@ -499,6 +499,95 @@ struct s_autoattack {
 	int flee_overwhelm;
 };
 
+enum e_autosupport_target_mode : uint8 {
+	AS_TARGET_SELF = 0,
+	AS_TARGET_PARTY_LEADER = 1,
+	AS_TARGET_SELECTED = 2,
+	AS_TARGET_PARTY_OTHERS = 3,
+	AS_TARGET_PARTY_ALL = 4,
+};
+
+enum e_autosupport_priority_mode : uint8 {
+	AS_PRIORITY_HEAL_FIRST = 0,
+	AS_PRIORITY_BUFF_FIRST = 1,
+};
+
+enum e_autosupport_info_id : uint8 {
+	ASI_ACTIVE = 0,
+	ASI_HEAL_ENABLED = 1,
+	ASI_HEAL_MINHP = 2,
+	ASI_HEAL_TARGET_MODE = 3,
+	ASI_POTION_COUNT = 4,
+	ASI_BUFF_COUNT = 5,
+	ASI_FOLLOW_ENABLED = 6,
+	ASI_FOLLOW_TARGET_CHARID = 7,
+	ASI_FOLLOW_DISTANCE = 8,
+	ASI_AUTO_RESURRECT = 9,
+	ASI_RETURN_SAVE = 10,
+	ASI_SELF_REVIVE_TOKEN = 11,
+	ASI_PRIORITY = 12,
+	ASI_HAS_BUFF = 13,
+};
+
+enum e_autosupport_list_kind : uint8 {
+	AS_LIST_HEAL_SELECTED = 0,
+	AS_LIST_POTIONS = 1,
+	AS_LIST_BUFFS = 2,
+	AS_LIST_BUFF_SELECTED = 3,
+};
+
+struct s_as_heal_config {
+	bool enabled = false;
+	uint16 min_hp = 50;
+	uint8 target_mode = AS_TARGET_SELF;
+	std::vector<int32> selected_char_ids;
+	t_tick last_use = 0;
+};
+
+struct s_as_potion {
+	bool enabled = true;
+	t_itemid item_id = 0;
+	uint16 min_hp = 0;
+	uint16 min_sp = 0;
+};
+
+struct s_as_buff_config {
+	bool enabled = true;
+	uint16 skill_id = 0;
+	uint16 skill_lv = 1;
+	uint8 target_mode = AS_TARGET_SELF;
+	std::vector<int32> selected_char_ids;
+	t_tick last_use = 0;
+};
+
+struct s_autosupport {
+	bool active = false;
+	int32 timer_tid = INVALID_TIMER;
+
+	t_tick end_tick = 0;
+	t_tick skill_cd = 0;
+	t_tick item_cd = 0;
+	t_tick last_follow_move = 0;
+	t_tick last_follow_jump = 0;
+	t_tick last_dead_action = 0;
+
+	int16 last_follow_x = 0;
+	int16 last_follow_y = 0;
+
+	bool follow_enabled = false;
+	int32 follow_target_char_id = 0;
+	uint8 follow_distance = 4;
+
+	bool auto_resurrect_party = false;
+	bool return_save_on_death = false;
+	bool self_revive_with_token = false;
+	uint8 priority_mode = AS_PRIORITY_HEAL_FIRST;
+
+	s_as_heal_config heal;
+	std::vector<s_as_potion> potions;
+	std::vector<s_as_buff_config> buffs;
+};
+
 struct s_char_data {
 	int32 charid;
 	int16 jobid;
@@ -514,6 +603,7 @@ public:
 	struct regen_data regen;
 	struct regen_data_sub sregen, ssregen;
 	struct s_autoattack aa;
+	struct s_autosupport as;
 	//NOTE: When deciding to add a flag to state or special_state, take into consideration that state is preserved in
 	//status_calc_pc, while special_state is recalculated in each call. [Skotlex]
 	struct s_state {
@@ -1569,6 +1659,14 @@ void pc_close_npc(map_session_data *sd,int32 flag);
 TIMER_FUNC(pc_close_npc_timer);
 
 void pc_aa_load(map_session_data* sd);
+
+bool autosupport_start(map_session_data* sd, t_tick duration = 0);
+void autosupport_stop(map_session_data* sd);
+void autosupport_cleanup(map_session_data* sd);
+void autosupport_load(map_session_data* sd);
+void autosupport_save(map_session_data* sd);
+void autosupport_validate(map_session_data* sd);
+void autosupport_on_dead(map_session_data* sd);
 
 void pc_setequipindex( map_session_data *sd );
 uint8 pc_isequip( const map_session_data* sd, int32 n );

@@ -1543,3 +1543,589 @@ BUILDIN_FUNC(skillinfocheck)
 		script_pushint(st, 0);
 	return SCRIPT_CMD_SUCCESS;
 }
+
+
+BUILDIN_FUNC(getautosupportpartylist)
+{
+	TBL_PC *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	if (!sd->status.party_id) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	party_data *p = party_search(sd->status.party_id);
+
+	if (!p) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	std::string result;
+	bool first = true;
+
+	for (int i = 0; i < MAX_PARTY; i++) {
+		if (!p->party.member[i].account_id)
+			continue;
+
+		char line[256];
+
+		snprintf(
+			line,
+			sizeof(line),
+			"%s,%u,%d",
+			p->party.member[i].name,
+			p->party.member[i].char_id,
+			p->party.member[i].leader ? 1 : 0
+		);
+
+		if (!first)
+			result += ":";
+
+		first = false;
+		result += line;
+	}
+
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(getautosupportconfiglist)
+{
+	TBL_PC *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushstrcopy(st, "");
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	int mode = script_getnum(st, 2);
+	int skill_id = script_hasdata(st, 3) ? script_getnum(st, 3) : 0;
+
+	std::string result;
+	bool first = true;
+
+	auto add_piece = [&](const std::string& piece) {
+		if (!first)
+			result += ":";
+
+		first = false;
+		result += piece;
+	};
+
+	if (mode == AS_LIST_POTIONS) {
+		for (const auto& entry : sd->as.potions) {
+			std::shared_ptr<item_data> item = item_db.find(entry.item_id);
+
+			if (!item)
+				continue;
+
+			char line[256];
+
+			snprintf(
+				line,
+				sizeof(line),
+				"%s,%u,%u,%u",
+				item->name.c_str(),
+				entry.item_id,
+				entry.min_hp,
+				entry.min_sp
+			);
+
+			add_piece(line);
+		}
+	}
+	else if (mode == AS_LIST_BUFFS) {
+		for (const s_as_buff_config& asbuff : sd->as.buffs) {
+			std::shared_ptr<s_skill_db> skill = skill_db.find(asbuff.skill_id);
+	
+			if (!skill)
+				continue;
+	
+			char line[256];
+	
+			snprintf(
+				line,
+				sizeof(line),
+				"%s,%u,%u,%u",
+				skill->desc,
+				asbuff.skill_id,
+				asbuff.skill_lv,
+				asbuff.target_mode
+			);
+	
+			add_piece(line);
+		}
+	}
+else if (mode == AS_LIST_HEAL_SELECTED) {
+		party_data *p = party_search(sd->status.party_id);
+
+		for (const auto& char_id : sd->as.heal.selected_char_ids) {
+			const char *name = "";
+
+			if (p) {
+				for (int i = 0; i < MAX_PARTY; i++) {
+					if (!p->party.member[i].account_id)
+						continue;
+
+					if ((int32)p->party.member[i].char_id == char_id) {
+						name = p->party.member[i].name;
+						break;
+					}
+				}
+			}
+
+			char line[256];
+
+			snprintf(
+				line,
+				sizeof(line),
+				"%s,%d",
+				name,
+				char_id
+			);
+
+			add_piece(line);
+		}
+	}
+	else if (mode == AS_LIST_BUFF_SELECTED) {
+		auto it = std::find_if(
+			sd->as.buffs.begin(),
+			sd->as.buffs.end(),
+			[skill_id](const s_as_buff_config& e) {
+				return e.skill_id == skill_id;
+			}
+		);
+
+		if (it != sd->as.buffs.end()) {
+			party_data *p = party_search(sd->status.party_id);
+
+			for (const auto& char_id : it->selected_char_ids) {
+				const char *name = "";
+
+				if (p) {
+					for (int i = 0; i < MAX_PARTY; i++) {
+						if (!p->party.member[i].account_id)
+							continue;
+
+						if ((int32)p->party.member[i].char_id == char_id) {
+							name = p->party.member[i].name;
+							break;
+						}
+					}
+				}
+
+				char line[256];
+
+				snprintf(
+					line,
+					sizeof(line),
+					"%s,%d",
+					name,
+					char_id
+				);
+
+				add_piece(line);
+			}
+		}
+	}
+
+	script_pushstrcopy(st, result.c_str());
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(autosupportintinfo)
+{
+	TBL_PC *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	int id = script_getnum(st, 2);
+	int arg = script_hasdata(st, 3) ? script_getnum(st, 3) : 0;
+
+	switch (id) {
+	case ASI_ACTIVE:
+		script_pushint(st, sd->as.active);
+		break;
+
+	case ASI_HEAL_ENABLED:
+		script_pushint(st, sd->as.heal.enabled);
+		break;
+
+	case ASI_HEAL_MINHP:
+		script_pushint(st, sd->as.heal.min_hp);
+		break;
+
+	case ASI_HEAL_TARGET_MODE:
+		script_pushint(st, sd->as.heal.target_mode);
+		break;
+
+	case ASI_POTION_COUNT:
+		script_pushint(st, (int)sd->as.potions.size());
+		break;
+
+	case ASI_BUFF_COUNT:
+		script_pushint(st, (int)sd->as.buffs.size());
+		break;
+
+	case ASI_FOLLOW_ENABLED:
+		script_pushint(st, sd->as.follow_enabled);
+		break;
+
+	case ASI_FOLLOW_TARGET_CHARID:
+		script_pushint(st, sd->as.follow_target_char_id);
+		break;
+
+	case ASI_FOLLOW_DISTANCE:
+		script_pushint(st, sd->as.follow_distance);
+		break;
+
+	case ASI_AUTO_RESURRECT:
+		script_pushint(st, sd->as.auto_resurrect_party);
+		break;
+
+	case ASI_RETURN_SAVE:
+		script_pushint(st, sd->as.return_save_on_death);
+		break;
+
+	case ASI_SELF_REVIVE_TOKEN:
+		script_pushint(st, sd->as.self_revive_with_token);
+		break;
+
+	case ASI_PRIORITY:
+		script_pushint(st, sd->as.priority_mode);
+		break;
+
+	case ASI_HAS_BUFF:
+	{
+		auto it = std::find_if(
+			sd->as.buffs.begin(),
+			sd->as.buffs.end(),
+			[arg](const s_as_buff_config& e) {
+				return e.skill_id == arg;
+			}
+		);
+
+		script_pushint(st, it != sd->as.buffs.end());
+		break;
+	}
+
+	default:
+		script_pushint(st, 0);
+		break;
+	}
+
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(autosupportclear)
+{
+	TBL_PC *sd;
+
+	if (!script_rid2sd(sd))
+		return SCRIPT_CMD_SUCCESS;
+
+	int mode = script_getnum(st, 2);
+	int skill_id = script_hasdata(st, 3) ? script_getnum(st, 3) : 0;
+
+	switch (mode) {
+	case AS_LIST_HEAL_SELECTED:
+		sd->as.heal.selected_char_ids.clear();
+		break;
+
+	case AS_LIST_POTIONS:
+		sd->as.potions.clear();
+		break;
+
+	case AS_LIST_BUFFS:
+		sd->as.buffs.clear();
+		break;
+
+	case AS_LIST_BUFF_SELECTED:
+	{
+		auto it = std::find_if(
+			sd->as.buffs.begin(),
+			sd->as.buffs.end(),
+			[skill_id](const s_as_buff_config& e) {
+				return e.skill_id == skill_id;
+			}
+		);
+
+		if (it != sd->as.buffs.end())
+			it->selected_char_ids.clear();
+
+		break;
+	}
+	}
+
+	autosupport_validate(sd);
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(autosupportset)
+{
+	TBL_PC *sd;
+
+	if (!script_rid2sd(sd))
+		return SCRIPT_CMD_SUCCESS;
+
+	std::vector<std::string> args;
+	std::string input = script_getstr(st, 2);
+	size_t start = 0;
+	size_t pos = 0;
+
+	while ((pos = input.find(';', start)) != std::string::npos) {
+		args.push_back(input.substr(start, pos - start));
+		start = pos + 1;
+	}
+
+	args.push_back(input.substr(start));
+
+	if (args.empty())
+		return SCRIPT_CMD_FAILURE;
+
+	int mode = std::stoi(args[0]);
+
+	switch (mode) {
+	case 0:
+		// 0;enabled;min_hp;target_mode
+		if (args.size() >= 4) {
+			sd->as.heal.enabled = std::stoi(args[1]) != 0;
+			sd->as.heal.min_hp = cap_value((uint16)std::stoi(args[2]), (uint16)1, (uint16)100);
+			sd->as.heal.target_mode = cap_value((uint8)std::stoi(args[3]), (uint8)AS_TARGET_SELF, (uint8)AS_TARGET_PARTY_ALL);
+		}
+		break;
+
+	case 1:
+		// 1;op;char_id
+		// op: 1 add, 0 remove, -1 clear
+		if (args.size() >= 3) {
+			int op = std::stoi(args[1]);
+			int32 char_id = std::stoi(args[2]);
+
+			if (op == -1) {
+				sd->as.heal.selected_char_ids.clear();
+			}
+			else if (op == 1) {
+				if (!util::vector_exists(sd->as.heal.selected_char_ids, char_id))
+					sd->as.heal.selected_char_ids.push_back(char_id);
+			}
+			else if (op == 0) {
+				sd->as.heal.selected_char_ids.erase(
+					std::remove(
+						sd->as.heal.selected_char_ids.begin(),
+						sd->as.heal.selected_char_ids.end(),
+						char_id
+					),
+					sd->as.heal.selected_char_ids.end()
+				);
+			}
+		}
+		break;
+
+	case 2:
+		// 2;op;item_id;min_hp;min_sp
+		if (args.size() >= 5) {
+			int op = std::stoi(args[1]);
+			t_itemid item_id = (t_itemid)strtoul(args[2].c_str(), nullptr, 10);
+			uint16 min_hp = cap_value((uint16)std::stoi(args[3]), (uint16)0, (uint16)100);
+			uint16 min_sp = cap_value((uint16)std::stoi(args[4]), (uint16)0, (uint16)100);
+
+			if (op == -1) {
+				sd->as.potions.clear();
+			}
+			else if (op == 0) {
+				sd->as.potions.erase(
+					std::remove_if(
+						sd->as.potions.begin(),
+						sd->as.potions.end(),
+						[item_id](const s_as_potion& e) {
+							return e.item_id == item_id;
+						}
+					),
+					sd->as.potions.end()
+				);
+			}
+			else if (op == 1) {
+				std::shared_ptr<item_data> item = item_db.find(item_id);
+
+				if (item && item->type == IT_HEALING) {
+					auto it = std::find_if(
+						sd->as.potions.begin(),
+						sd->as.potions.end(),
+						[item_id](const s_as_potion& e) {
+							return e.item_id == item_id;
+						}
+					);
+
+					if (it != sd->as.potions.end()) {
+						it->min_hp = min_hp;
+						it->min_sp = min_sp;
+					}
+					else {
+						s_as_potion entry{};
+						entry.item_id = item_id;
+						entry.min_hp = min_hp;
+						entry.min_sp = min_sp;
+
+						sd->as.potions.push_back(entry);
+					}
+				}
+			}
+		}
+		break;
+
+	case 3:
+		// 3;op;skill_id;skill_lv;target_mode
+		if (args.size() >= 5) {
+			int op = std::stoi(args[1]);
+			uint16 skill_id = (uint16)std::stoi(args[2]);
+			uint16 skill_lv = (uint16)std::stoi(args[3]);
+			uint8 target_mode = cap_value((uint8)std::stoi(args[4]), (uint8)AS_TARGET_SELF, (uint8)AS_TARGET_PARTY_ALL);
+
+			if (op == -1) {
+				sd->as.buffs.clear();
+			}
+			else if (op == 0) {
+				sd->as.buffs.erase(
+					std::remove_if(
+						sd->as.buffs.begin(),
+						sd->as.buffs.end(),
+						[skill_id](const s_as_buff_config& e) {
+							return e.skill_id == skill_id;
+						}
+					),
+					sd->as.buffs.end()
+				);
+			}
+			else if (op == 1) {
+				if (pc_checkskill(sd, skill_id) > 0) {
+					auto it = std::find_if(
+						sd->as.buffs.begin(),
+						sd->as.buffs.end(),
+						[skill_id](const s_as_buff_config& e) {
+							return e.skill_id == skill_id;
+						}
+					);
+
+					if (it != sd->as.buffs.end()) {
+						it->skill_lv = min(skill_lv, (uint16)pc_checkskill(sd, skill_id));
+						it->target_mode = target_mode;
+					}
+					else {
+						s_as_buff_config entry{};
+						entry.skill_id = skill_id;
+						entry.skill_lv = min(skill_lv, (uint16)pc_checkskill(sd, skill_id));
+						entry.target_mode = target_mode;
+
+						sd->as.buffs.push_back(entry);
+					}
+				}
+			}
+		}
+		break;
+
+	case 4:
+		// 4;skill_id;op;char_id
+		if (args.size() >= 4) {
+			uint16 skill_id = (uint16)std::stoi(args[1]);
+			int op = std::stoi(args[2]);
+			int32 char_id = std::stoi(args[3]);
+
+			auto it = std::find_if(
+				sd->as.buffs.begin(),
+				sd->as.buffs.end(),
+				[skill_id](const s_as_buff_config& e) {
+					return e.skill_id == skill_id;
+				}
+			);
+
+			if (it != sd->as.buffs.end()) {
+				if (op == -1) {
+					it->selected_char_ids.clear();
+				}
+				else if (op == 1) {
+					if (!util::vector_exists(it->selected_char_ids, char_id))
+						it->selected_char_ids.push_back(char_id);
+				}
+				else if (op == 0) {
+					it->selected_char_ids.erase(
+						std::remove(
+							it->selected_char_ids.begin(),
+							it->selected_char_ids.end(),
+							char_id
+						),
+						it->selected_char_ids.end()
+					);
+				}
+			}
+		}
+		break;
+
+	case 5:
+		// 5;enabled;target_char_id;distance
+		if (args.size() >= 4) {
+			sd->as.follow_enabled = std::stoi(args[1]) != 0;
+			sd->as.follow_target_char_id = std::stoi(args[2]);
+			sd->as.follow_distance = cap_value((uint8)std::stoi(args[3]), (uint8)2, (uint8)8);
+		}
+		break;
+
+	case 6:
+		// 6;0|1 auto resurrect party
+		if (args.size() >= 2)
+			sd->as.auto_resurrect_party = std::stoi(args[1]) != 0;
+		break;
+
+	case 7:
+		// 7;0|1 return save
+		if (args.size() >= 2)
+			sd->as.return_save_on_death = std::stoi(args[1]) != 0;
+		break;
+
+	case 8:
+		// 8;0|1 token revive
+		if (args.size() >= 2)
+			sd->as.self_revive_with_token = std::stoi(args[1]) != 0;
+		break;
+
+	case 9:
+		// 9;priority
+		if (args.size() >= 2)
+			sd->as.priority_mode = cap_value((uint8)std::stoi(args[1]), (uint8)AS_PRIORITY_HEAL_FIRST, (uint8)AS_PRIORITY_BUFF_FIRST);
+		break;
+	}
+
+	autosupport_validate(sd);
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(autosupportstart)
+{
+	TBL_PC *sd;
+
+	if (!script_rid2sd(sd)) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	int mode = script_getnum(st, 2);
+	t_tick duration = script_hasdata(st, 3) ? script_getnum(st, 3) : 0;
+
+	if (mode)
+		script_pushint(st, autosupport_start(sd, duration));
+	else {
+		autosupport_stop(sd);
+		script_pushint(st, 1);
+	}
+
+	return SCRIPT_CMD_SUCCESS;
+}

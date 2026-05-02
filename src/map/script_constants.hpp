@@ -11237,6 +11237,34 @@
 	export_constant(AI_AMMO_KUNAI);
 	export_constant(AI_AMMO_CANNON);
 	// pp autoattack
+	export_constant(AS_TARGET_SELF);
+	export_constant(AS_TARGET_PARTY_LEADER);
+	export_constant(AS_TARGET_SELECTED);
+	export_constant(AS_TARGET_PARTY_OTHERS);
+	export_constant(AS_TARGET_PARTY_ALL);
+
+	export_constant(AS_PRIORITY_HEAL_FIRST);
+	export_constant(AS_PRIORITY_BUFF_FIRST);
+	export_constant(ASI_ACTIVE);
+	export_constant(ASI_HEAL_ENABLED);
+	export_constant(ASI_HEAL_MINHP);
+	export_constant(ASI_HEAL_TARGET_MODE);
+	export_constant(ASI_POTION_COUNT);
+	export_constant(ASI_BUFF_COUNT);
+	export_constant(ASI_FOLLOW_ENABLED);
+	export_constant(ASI_FOLLOW_TARGET_CHARID);
+	export_constant(ASI_FOLLOW_DISTANCE);
+	export_constant(ASI_AUTO_RESURRECT);
+	export_constant(ASI_RETURN_SAVE);
+	export_constant(ASI_SELF_REVIVE_TOKEN);
+	export_constant(ASI_PRIORITY);
+	export_constant(ASI_HAS_BUFF);
+
+	export_constant(AS_LIST_HEAL_SELECTED);
+	export_constant(AS_LIST_POTIONS);
+	export_constant(AS_LIST_BUFFS);
+	export_constant(AS_LIST_BUFF_SELECTED);
+	// pp autoattack
 
 	/* searchstore constants */
 	export_constant(SEARCHSTORE_EFFECT_NORMAL);

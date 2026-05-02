@@ -2557,6 +2557,7 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
 	}
 
 	pc_aa_load(sd);
+	autosupport_load(sd);
 
 	// Request all registries (auth is considered completed whence they arrive)
 	intif_request_registry(sd,7);
@@ -2758,6 +2759,769 @@ void pc_aa_load(map_session_data* sd)
 	sd->aa.aa_last_move_index = 0;
 }
 
+// ============================================================
+// AutoSupport System
+// ============================================================
+
+static const t_tick AS_INTERVAL = 300;
+static const t_tick AS_MIN_GLOBAL_SKILL_DELAY = 500;
+static const t_tick AS_FOLLOW_STUCK_TIME = 3000;
+static const t_tick AS_FOLLOW_JUMP_COOLDOWN = 1200;
+static const int AS_FOLLOW_JUMP_TRIGGER_DISTANCE = 12;
+
+static int as_percent(int cur, int max)
+{
+	if (max <= 0)
+		return 100;
+
+	return (cur * 100) / max;
+}
+
+static party_data* as_party(map_session_data* sd)
+{
+	if (!sd || !sd->status.party_id)
+		return nullptr;
+
+	return party_search(sd->status.party_id);
+}
+
+static bool as_is_valid_party_charid(map_session_data* sd, int32 char_id, bool allow_self = true)
+{
+	party_data* p = as_party(sd);
+
+	if (!p)
+		return false;
+
+	for (int i = 0; i < MAX_PARTY; i++) {
+		if (!p->party.member[i].account_id)
+			continue;
+
+		if ((int32)p->party.member[i].char_id != char_id)
+			continue;
+
+		if (!allow_self && char_id == sd->status.char_id)
+			return false;
+
+		return true;
+	}
+
+	return false;
+}
+
+static map_session_data* as_find_online_member(map_session_data* sd, int32 char_id)
+{
+	party_data* p = as_party(sd);
+
+	if (!p)
+		return nullptr;
+
+	for (int i = 0; i < MAX_PARTY; i++) {
+		if (!p->party.member[i].account_id)
+			continue;
+
+		if ((int32)p->party.member[i].char_id != char_id)
+			continue;
+
+		return p->data[i].sd;
+	}
+
+	return nullptr;
+}
+
+static map_session_data* as_find_leader(map_session_data* sd)
+{
+	party_data* p = as_party(sd);
+
+	if (!p)
+		return nullptr;
+
+	for (int i = 0; i < MAX_PARTY; i++) {
+		if (!p->party.member[i].account_id)
+			continue;
+
+		if (p->party.member[i].leader)
+			return p->data[i].sd;
+	}
+
+	return nullptr;
+}
+
+static void as_collect_targets(map_session_data* sd, uint8 mode, const std::vector<int32>& selected, std::vector<map_session_data*>& out)
+{
+	party_data* p = as_party(sd);
+
+	if (!sd)
+		return;
+
+	switch (mode) {
+	case AS_TARGET_SELF:
+		out.push_back(sd);
+		return;
+
+	case AS_TARGET_PARTY_LEADER:
+	{
+		map_session_data* leader = as_find_leader(sd);
+		if (leader)
+			out.push_back(leader);
+		return;
+	}
+
+	case AS_TARGET_SELECTED:
+		for (const auto& char_id : selected) {
+			map_session_data* tsd = as_find_online_member(sd, char_id);
+			if (tsd)
+				out.push_back(tsd);
+		}
+		return;
+
+	case AS_TARGET_PARTY_OTHERS:
+	case AS_TARGET_PARTY_ALL:
+		if (!p)
+			return;
+
+		for (int i = 0; i < MAX_PARTY; i++) {
+			map_session_data* tsd = p->data[i].sd;
+
+			if (!tsd)
+				continue;
+
+			if (mode == AS_TARGET_PARTY_OTHERS && tsd == sd)
+				continue;
+
+			out.push_back(tsd);
+		}
+		return;
+	}
+}
+
+static int as_skill_range(uint16 skill_id, uint16 lv)
+{
+	int range = skill_get_range(skill_id, lv);
+
+	if (range < 0)
+		range = -range;
+
+	if (range == 0)
+		range = 2;
+
+	return range;
+}
+
+static bool as_can_cast(map_session_data* sd, uint16 skill_id, uint16 lv)
+{
+	if (!sd)
+		return false;
+
+	if (skill_isNotOk(skill_id, *sd))
+		return false;
+
+	if (pc_checkskill(sd, skill_id) < lv)
+		return false;
+
+	if (!skill_check_condition_castbegin(*sd, skill_id, lv))
+		return false;
+
+	return true;
+}
+
+static void as_apply_cd(map_session_data* sd, uint16 skill_id, uint16 lv, t_tick& last_use_field)
+{
+	t_tick now = gettick();
+	t_tick delay = skill_delayfix(sd, skill_id, lv);
+	t_tick skill_cd = pc_get_skillcooldown(sd, skill_id, lv);
+	t_tick total = std::max(std::max(delay, skill_cd), (t_tick)AS_MIN_GLOBAL_SKILL_DELAY);
+
+	last_use_field = now + total;
+	sd->as.skill_cd = now + total;
+}
+
+static bool as_move_into_range(map_session_data* sd, block_list* target, int range)
+{
+	if (!sd || !target)
+		return false;
+
+	if (pc_issit(sd))
+		pc_setstand(sd, false);
+
+	if (check_distance_bl(sd, target, range))
+		return true;
+
+	unit_walktobl(sd, target, range, 1);
+	return false;
+}
+
+static bool as_try_potions(map_session_data* sd)
+{
+	if (!sd || pc_isdead(sd))
+		return false;
+
+	t_tick now = gettick();
+
+	if (now < sd->as.item_cd)
+		return false;
+
+	int hp_percent = as_percent(sd->battle_status.hp, sd->battle_status.max_hp);
+	int sp_percent = as_percent(sd->battle_status.sp, sd->battle_status.max_sp);
+
+	for (auto& entry : sd->as.potions) {
+		if (!entry.enabled || entry.item_id == 0)
+			continue;
+
+		bool use_hp = entry.min_hp > 0 && hp_percent < entry.min_hp;
+		bool use_sp = entry.min_sp > 0 && sp_percent < entry.min_sp;
+
+		if (!use_hp && !use_sp)
+			continue;
+
+		int idx = pc_search_inventory(sd, entry.item_id);
+
+		if (idx < 0)
+			continue;
+
+		if (pc_useitem(sd, idx)) {
+			sd->as.item_cd = now + 500;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool as_try_heal(map_session_data* sd)
+{
+	if (!sd || !sd->as.heal.enabled)
+		return false;
+
+	t_tick now = gettick();
+
+	if (now < sd->as.skill_cd)
+		return false;
+
+	uint16 lv = pc_checkskill(sd, AL_HEAL);
+
+	if (lv == 0)
+		return false;
+
+	if (!as_can_cast(sd, AL_HEAL, lv))
+		return false;
+
+	std::vector<map_session_data*> targets;
+	as_collect_targets(sd, sd->as.heal.target_mode, sd->as.heal.selected_char_ids, targets);
+
+	map_session_data* best = nullptr;
+	int best_pct = 101;
+
+	for (auto* tsd : targets) {
+		if (!tsd || pc_isdead(tsd))
+			continue;
+
+		if (tsd->m != sd->m)
+			continue;
+
+		int hp_pct = as_percent(tsd->battle_status.hp, tsd->battle_status.max_hp);
+
+		if (hp_pct >= sd->as.heal.min_hp)
+			continue;
+
+		if (hp_pct < best_pct) {
+			best = tsd;
+			best_pct = hp_pct;
+		}
+	}
+
+	if (!best)
+		return false;
+
+	int range = as_skill_range(AL_HEAL, lv);
+
+	if (!as_move_into_range(sd, best, range))
+		return true;
+
+	if (unit_skilluse_id(sd, best->id, AL_HEAL, lv)) {
+		as_apply_cd(sd, AL_HEAL, lv, sd->as.heal.last_use);
+		return true;
+	}
+
+	return false;
+}
+
+static bool as_target_needs_buff(map_session_data* target, uint16 skill_id)
+{
+	if (!target || pc_isdead(target))
+		return false;
+
+	sc_type sc = skill_get_sc(skill_id);
+
+	if (sc == SC_NONE)
+		return true;
+
+	return !target->sc.getSCE(sc);
+}
+
+static bool as_try_buffs(map_session_data* sd)
+{
+	if (!sd || sd->as.buffs.empty())
+		return false;
+
+	t_tick now = gettick();
+
+	if (now < sd->as.skill_cd)
+		return false;
+
+	for (auto& entry : sd->as.buffs) {
+		if (!entry.enabled || entry.skill_id == 0)
+			continue;
+
+		uint16 learned = pc_checkskill(sd, entry.skill_id);
+
+		if (learned == 0)
+			continue;
+
+		uint16 lv = min(learned, entry.skill_lv);
+
+		if (!as_can_cast(sd, entry.skill_id, lv))
+			continue;
+
+		std::vector<map_session_data*> targets;
+		as_collect_targets(sd, entry.target_mode, entry.selected_char_ids, targets);
+
+		map_session_data* best = nullptr;
+		int best_dist = INT_MAX;
+
+		for (auto* tsd : targets) {
+			if (!tsd || pc_isdead(tsd))
+				continue;
+
+			if (tsd->m != sd->m)
+				continue;
+
+			if (!as_target_needs_buff(tsd, entry.skill_id))
+				continue;
+
+			int dist = distance_bl(sd, tsd);
+
+			if (dist < best_dist) {
+				best = tsd;
+				best_dist = dist;
+			}
+		}
+
+		if (!best)
+			continue;
+
+		int range = as_skill_range(entry.skill_id, lv);
+
+		if (!as_move_into_range(sd, best, range))
+			return true;
+
+		if (unit_skilluse_id(sd, best->id, entry.skill_id, lv)) {
+			as_apply_cd(sd, entry.skill_id, lv, entry.last_use);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool as_try_resurrection(map_session_data* sd)
+{
+	if (!sd || !sd->as.auto_resurrect_party || !sd->status.party_id)
+		return false;
+
+	t_tick now = gettick();
+
+	if (now < sd->as.skill_cd)
+		return false;
+
+	uint16 lv = pc_checkskill(sd, ALL_RESURRECTION);
+
+	if (lv == 0)
+		return false;
+
+	if (pc_search_inventory(sd, ITEMID_BLUE_GEMSTONE) < 0)
+		return false;
+
+	if (!as_can_cast(sd, ALL_RESURRECTION, lv))
+		return false;
+
+	party_data* p = as_party(sd);
+
+	if (!p)
+		return false;
+
+	map_session_data* best = nullptr;
+	int best_dist = INT_MAX;
+
+	for (int i = 0; i < MAX_PARTY; i++) {
+		map_session_data* tsd = p->data[i].sd;
+
+		if (!tsd || tsd == sd)
+			continue;
+
+		if (!pc_isdead(tsd))
+			continue;
+
+		if (tsd->m != sd->m)
+			continue;
+
+		int dist = distance_bl(sd, tsd);
+
+		if (dist < best_dist) {
+			best = tsd;
+			best_dist = dist;
+		}
+	}
+
+	if (!best)
+		return false;
+
+	int range = as_skill_range(ALL_RESURRECTION, lv);
+
+	if (!as_move_into_range(sd, best, range))
+		return true;
+
+	if (unit_skilluse_id(sd, best->id, ALL_RESURRECTION, lv)) {
+		as_apply_cd(sd, ALL_RESURRECTION, lv, sd->as.heal.last_use);
+		return true;
+	}
+
+	return false;
+}
+
+static bool as_try_follow(map_session_data* sd)
+{
+	if (!sd || !sd->as.follow_enabled || sd->as.follow_target_char_id <= 0)
+		return false;
+
+	map_session_data* target = as_find_online_member(sd, sd->as.follow_target_char_id);
+
+	if (!target || target == sd)
+		return false;
+
+	if (target->m != sd->m)
+		return false;
+
+	int dist = distance_bl(sd, target);
+
+	if (dist <= sd->as.follow_distance) {
+		sd->as.last_follow_x = sd->x;
+		sd->as.last_follow_y = sd->y;
+		return false;
+	}
+
+	t_tick now = gettick();
+
+	if (pc_issit(sd))
+		pc_setstand(sd, false);
+
+	unit_walktobl(sd, target, sd->as.follow_distance, 1);
+
+	bool stuck =
+		sd->x == sd->as.last_follow_x &&
+		sd->y == sd->as.last_follow_y &&
+		DIFF_TICK(now, sd->as.last_follow_move) >= AS_FOLLOW_STUCK_TIME;
+
+	sd->as.last_follow_move = now;
+	sd->as.last_follow_x = sd->x;
+	sd->as.last_follow_y = sd->y;
+
+	if ((stuck || dist >= AS_FOLLOW_JUMP_TRIGGER_DISTANCE) &&
+		DIFF_TICK(now, sd->as.last_follow_jump) >= AS_FOLLOW_JUMP_COOLDOWN) {
+
+		int16 x = target->x;
+		int16 y = target->y;
+
+		map_search_freecell(target, 0, &x, &y, 1, 1, 0);
+
+		if (pc_setpos(sd, target->mapindex, x, y, CLR_TELEPORT) == SETPOS_OK) {
+			sd->as.last_follow_jump = now;
+			return true;
+		}
+	}
+
+	return true;
+}
+
+static void as_handle_self_dead(map_session_data* sd)
+{
+	if (!sd || !sd->as.active)
+		return;
+
+	t_tick now = gettick();
+
+	if (DIFF_TICK(now, sd->as.last_dead_action) < 1000)
+		return;
+
+	sd->as.last_dead_action = now;
+
+	if (sd->as.self_revive_with_token && pc_revive_item(sd))
+		return;
+
+	if (sd->as.return_save_on_death) {
+		pc_respawn(sd, CLR_OUTSIGHT);
+		autosupport_stop(sd);
+		return;
+	}
+
+	autosupport_stop(sd);
+}
+
+TIMER_FUNC(autosupport_timer)
+{
+	map_session_data* sd = map_id2sd(id);
+
+	if (!sd)
+		return 0;
+
+	if (!sd->as.active || sd->as.timer_tid != tid)
+		return 0;
+
+	if (sd->as.end_tick && DIFF_TICK(gettick(), sd->as.end_tick) >= 0) {
+		autosupport_stop(sd);
+		return 0;
+	}
+
+	if (!sd->status.party_id || as_party(sd) == nullptr) {
+		autosupport_stop(sd);
+		return 0;
+	}
+
+	autosupport_validate(sd);
+
+	if (pc_isdead(sd)) {
+		as_handle_self_dead(sd);
+		return 0;
+	}
+
+	if (as_try_potions(sd))
+		return 0;
+
+	if (as_try_resurrection(sd))
+		return 0;
+
+	if (sd->as.priority_mode == AS_PRIORITY_BUFF_FIRST) {
+		if (as_try_buffs(sd))
+			return 0;
+
+		if (as_try_heal(sd))
+			return 0;
+	}
+	else {
+		if (as_try_heal(sd))
+			return 0;
+
+		if (as_try_buffs(sd))
+			return 0;
+	}
+
+	as_try_follow(sd);
+
+	return 0;
+}
+
+bool autosupport_start(map_session_data* sd, t_tick duration)
+{
+	if (!sd || !sd->status.party_id || as_party(sd) == nullptr)
+		return false;
+
+	autosupport_validate(sd);
+
+	if (sd->as.timer_tid != INVALID_TIMER)
+		delete_timer(sd->as.timer_tid, autosupport_timer);
+
+	sd->as.active = true;
+	sd->as.end_tick = duration > 0 ? gettick() + duration : 0;
+	sd->as.last_follow_move = gettick();
+	sd->as.last_follow_jump = 0;
+	sd->as.last_dead_action = 0;
+	sd->as.last_follow_x = sd->x;
+	sd->as.last_follow_y = sd->y;
+
+	sd->as.timer_tid = add_timer_interval(
+		gettick() + AS_INTERVAL,
+		autosupport_timer,
+		sd->id,
+		0,
+		AS_INTERVAL
+	);
+
+	return true;
+}
+
+void autosupport_stop(map_session_data* sd)
+{
+	if (!sd)
+		return;
+
+	if (sd->as.timer_tid != INVALID_TIMER) {
+		delete_timer(sd->as.timer_tid, autosupport_timer);
+		sd->as.timer_tid = INVALID_TIMER;
+	}
+
+	sd->as.active = false;
+	sd->as.end_tick = 0;
+	sd->as.skill_cd = 0;
+	sd->as.item_cd = 0;
+}
+
+void autosupport_cleanup(map_session_data* sd)
+{
+	autosupport_stop(sd);
+}
+
+void autosupport_validate(map_session_data* sd)
+{
+	if (!sd)
+		return;
+
+	sd->as.follow_distance = cap_value(sd->as.follow_distance, (uint8)2, (uint8)8);
+	sd->as.heal.min_hp = cap_value(sd->as.heal.min_hp, (uint16)1, (uint16)100);
+	sd->as.priority_mode = cap_value(sd->as.priority_mode, (uint8)AS_PRIORITY_HEAL_FIRST, (uint8)AS_PRIORITY_BUFF_FIRST);
+	sd->as.heal.target_mode = cap_value(sd->as.heal.target_mode, (uint8)AS_TARGET_SELF, (uint8)AS_TARGET_PARTY_ALL);
+
+	sd->as.heal.selected_char_ids.erase(
+		std::remove_if(
+			sd->as.heal.selected_char_ids.begin(),
+			sd->as.heal.selected_char_ids.end(),
+			[sd](int32 char_id) {
+				return !as_is_valid_party_charid(sd, char_id, true);
+			}
+		),
+		sd->as.heal.selected_char_ids.end()
+	);
+}
+
+void autosupport_on_dead(map_session_data* sd)
+{
+	if (!sd || !sd->as.active)
+		return;
+
+	sd->as.last_dead_action = 0;
+}
+
+void autosupport_load(map_session_data* sd)
+{
+	nullpo_retv(sd);
+
+	autosupport_stop(sd);
+
+	sd->as = s_autosupport{};
+
+	sd->as.follow_distance = 4;
+	sd->as.priority_mode = AS_PRIORITY_HEAL_FIRST;
+	sd->as.heal.min_hp = 50;
+	sd->as.heal.target_mode = AS_TARGET_SELF;
+
+	if (Sql_Query(mmysql_handle,
+		"SELECT `heal_enabled`,`heal_min_hp`,`heal_target_mode`,`follow_enabled`,`follow_target_char_id`,`follow_distance`,"
+		"`auto_resurrect_party`,`return_save_on_death`,`self_revive_with_token`,`priority_mode` "
+		"FROM `as_config` WHERE `char_id` = %d",
+		sd->status.char_id) == SQL_SUCCESS && Sql_NumRows(mmysql_handle)) {
+
+		while (SQL_SUCCESS == Sql_NextRow(mmysql_handle)) {
+			char* data = nullptr;
+
+			Sql_GetData(mmysql_handle, 0, &data, nullptr); sd->as.heal.enabled = atoi(data);
+			Sql_GetData(mmysql_handle, 1, &data, nullptr); sd->as.heal.min_hp = atoi(data);
+			Sql_GetData(mmysql_handle, 2, &data, nullptr); sd->as.heal.target_mode = atoi(data);
+			Sql_GetData(mmysql_handle, 3, &data, nullptr); sd->as.follow_enabled = atoi(data);
+			Sql_GetData(mmysql_handle, 4, &data, nullptr); sd->as.follow_target_char_id = atoi(data);
+			Sql_GetData(mmysql_handle, 5, &data, nullptr); sd->as.follow_distance = atoi(data);
+			Sql_GetData(mmysql_handle, 6, &data, nullptr); sd->as.auto_resurrect_party = atoi(data);
+			Sql_GetData(mmysql_handle, 7, &data, nullptr); sd->as.return_save_on_death = atoi(data);
+			Sql_GetData(mmysql_handle, 8, &data, nullptr); sd->as.self_revive_with_token = atoi(data);
+			Sql_GetData(mmysql_handle, 9, &data, nullptr); sd->as.priority_mode = atoi(data);
+		}
+	}
+
+	Sql_FreeResult(mmysql_handle);
+
+	if (Sql_Query(mmysql_handle,
+		"SELECT `item_id`,`min_hp`,`min_sp` FROM `as_potions` WHERE `char_id` = %d",
+		sd->status.char_id) == SQL_SUCCESS) {
+
+		while (SQL_SUCCESS == Sql_NextRow(mmysql_handle)) {
+			char* data = nullptr;
+			s_as_potion entry{};
+
+			Sql_GetData(mmysql_handle, 0, &data, nullptr); entry.item_id = atoi(data);
+			Sql_GetData(mmysql_handle, 1, &data, nullptr); entry.min_hp = atoi(data);
+			Sql_GetData(mmysql_handle, 2, &data, nullptr); entry.min_sp = atoi(data);
+
+			sd->as.potions.push_back(entry);
+		}
+	}
+
+	Sql_FreeResult(mmysql_handle);
+
+	if (Sql_Query(mmysql_handle,
+		"SELECT `skill_id`,`skill_lv`,`target_mode` FROM `as_buffs` WHERE `char_id` = %d",
+		sd->status.char_id) == SQL_SUCCESS) {
+
+		while (SQL_SUCCESS == Sql_NextRow(mmysql_handle)) {
+			char* data = nullptr;
+			s_as_buff_config entry{};
+
+			Sql_GetData(mmysql_handle, 0, &data, nullptr); entry.skill_id = atoi(data);
+			Sql_GetData(mmysql_handle, 1, &data, nullptr); entry.skill_lv = atoi(data);
+			Sql_GetData(mmysql_handle, 2, &data, nullptr); entry.target_mode = atoi(data);
+
+			sd->as.buffs.push_back(entry);
+		}
+	}
+
+	Sql_FreeResult(mmysql_handle);
+
+	autosupport_validate(sd);
+}
+
+void autosupport_save(map_session_data* sd)
+{
+	nullpo_retv(sd);
+
+	if (SQL_ERROR == Sql_Query(mmysql_handle,
+		"REPLACE INTO `as_config` "
+		"(`char_id`,`heal_enabled`,`heal_min_hp`,`heal_target_mode`,`follow_enabled`,`follow_target_char_id`,`follow_distance`,"
+		"`auto_resurrect_party`,`return_save_on_death`,`self_revive_with_token`,`priority_mode`) "
+		"VALUES (%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d)",
+		sd->status.char_id,
+		sd->as.heal.enabled,
+		sd->as.heal.min_hp,
+		sd->as.heal.target_mode,
+		sd->as.follow_enabled,
+		sd->as.follow_target_char_id,
+		sd->as.follow_distance,
+		sd->as.auto_resurrect_party,
+		sd->as.return_save_on_death,
+		sd->as.self_revive_with_token,
+		sd->as.priority_mode)) {
+		Sql_ShowDebug(mmysql_handle);
+	}
+
+	Sql_Query(mmysql_handle, "DELETE FROM `as_potions` WHERE `char_id` = %d", sd->status.char_id);
+
+	for (const auto& entry : sd->as.potions) {
+		Sql_Query(mmysql_handle,
+			"INSERT INTO `as_potions` (`char_id`,`item_id`,`min_hp`,`min_sp`) VALUES (%d,%d,%d,%d)",
+			sd->status.char_id,
+			entry.item_id,
+			entry.min_hp,
+			entry.min_sp
+		);
+	}
+
+	Sql_Query(mmysql_handle, "DELETE FROM `as_buffs` WHERE `char_id` = %d", sd->status.char_id);
+
+	for (const auto& entry : sd->as.buffs) {
+		Sql_Query(mmysql_handle,
+			"INSERT INTO `as_buffs` (`char_id`,`skill_id`,`skill_lv`,`target_mode`) VALUES (%d,%d,%d,%d)",
+			sd->status.char_id,
+			entry.skill_id,
+			entry.skill_lv,
+			entry.target_mode
+		);
+	}
+}
 
 /*==========================================
  * Closes a connection because it failed to be authenticated from the char server.
@@ -2874,7 +3638,8 @@ void pc_reg_received(map_session_data *sd)
 
 // (^~_~^) Color Nicks Start
 
-	sd->color_nicks_group_id = pc_readglobalreg(sd, add_str("CN_GROUP_ID"));
+	//sd->color_nicks_group_id = pc_readglobalreg(sd, add_str("CN_GROUP_ID"));
+	sd->color_nicks_group_id = (uint32)pc_readglobalreg(sd, add_str("CN_GROUP_ID"));
 
 // (^~_~^) Color Nicks End
 
@@ -10566,6 +11331,7 @@ int32 pc_dead(map_session_data *sd,block_list *src)
 		}
 	}
 
+	autosupport_on_dead(sd);
 
 	pc_setparam(sd, SP_PCDIECOUNTER, sd->die_counter+1);
 	pc_setparam(sd, SP_KILLERRID, src?src->id:0);

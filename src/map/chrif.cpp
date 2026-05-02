@@ -346,6 +346,13 @@ int32 chrif_save(map_session_data *sd, int32 flag) {
 
 	chrif_aa_save(sd);
 
+	autosupport_save(sd);
+
+	if (flag & CSAVE_QUITTING)
+		autosupport_cleanup(sd);
+
+
+
 	return 0;
 }
 
