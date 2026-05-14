@@ -1,0 +1,530 @@
+-	script	FP_Town_Controller	-1,{
+
+OnInit:
+	.max_total = 1000;
+	.per_map_limit = 1000;
+	.spawn_batch = 100;
+	.tick_batch = 50;
+	.tick_index = 0;
+
+	.chat_min_cd = 60;
+	.chat_max_cd = 180;
+
+	// ===== FakePlayer Walk Setting =====
+	.walk_chance = 5; // % โอกาสที่ตัวนั้นจะเดิน
+	.walk_radius = 5; // เดินห่างจากจุดเกิดไม่เกินกี่ช่อง
+	.walk_min_cd = 15; // วินาทีขั้นต่ำก่อนเดินครั้งต่อไป
+	.walk_max_cd = 40; // วินาทีสูงสุดก่อนเดินครั้งต่อไป
+
+	setarray .towns$[0],
+		"new_1-1",
+		"morocc",
+		"geffen",
+		"prontera",
+		"izlude",
+		"aldebaran",
+		"payon";
+
+	bindatcmd "fakeplayer", strnpcinfo(3)+"::OnAtcmd", 80, 99;
+
+	query_sql("UPDATE `fp_profile` SET `active`=0, `gid`=NULL, `state`=0 WHERE `active`=1");
+
+	callsub S_LoadChat;
+
+	.active_count = 0;
+	.last_save_tick = gettimetick(2);
+	.last_cache_tick = gettimetick(2);
+
+	initnpctimer;
+	end;
+
+OnTimer1000:
+	.@now = gettimetick(2);
+
+	if (.tick_index < 0 || .tick_index >= .active_count)
+		.tick_index = 0;
+
+	.@limit = .tick_index + .tick_batch;
+	if (.@limit > .active_count)
+		.@limit = .active_count;
+
+	for (.@i = .tick_index; .@i < .@limit; .@i++) {
+		.@gid = .gid[.@i];
+
+		if (!unitexists(.@gid))
+			continue;
+
+		// พูดสุ่ม
+		if (.@now >= .next_chat_tick[.@i] && .chat_count > 0 && rand(100) < 12) {
+			callsub S_RandomChat;
+
+			if (.@msg$ != "") {
+				callsub S_ApplyView, .@i;
+				unittalk(.@gid, .@msg$);
+
+				.state[.@i] = 3;
+
+				if (.@cd < 1)
+					.@cd = rand(.chat_min_cd, .chat_max_cd);
+
+				.next_chat_tick[.@i] = .@now + .@cd;
+			}
+		}
+
+		// เดินเฉพาะตัวที่ถูกกำหนดให้เดิน
+		if (.walk_enabled[.@i] && .@now >= .next_walk_tick[.@i]) {
+			.@tx = .home_x[.@i] + rand(-.walk_radius, .walk_radius);
+			.@ty = .home_y[.@i] + rand(-.walk_radius, .walk_radius);
+
+			if (checkcell(.map$[.@i], .@tx, .@ty, cell_chkpass)) {
+				unitwalk .@gid, .@tx, .@ty;
+				.state[.@i] = 2;
+			}
+
+			.next_walk_tick[.@i] = .@now + rand(.walk_min_cd, .walk_max_cd);
+		}
+	}
+
+	.tick_index = .@limit;
+
+	if (.tick_index >= .active_count)
+		.tick_index = 0;
+
+	if ((.@now - .last_save_tick) >= 300) {
+		callsub S_SaveAll;
+		.last_save_tick = .@now;
+	}
+
+	if ((.@now - .last_cache_tick) >= 30) {
+		callsub S_RebuildTownCache;
+		.last_cache_tick = .@now;
+	}
+
+	setnpctimer 0;
+	end;
+
+OnAtcmd:
+	.@cmd$ = .@atcmd_parameters$[0];
+
+	if (.@cmd$ == "help") {
+		dispbottom "@fakeplayer spawn <map> <count>";
+		dispbottom "@fakeplayer despawn <map|all>";
+		dispbottom "@fakeplayer reload";
+		dispbottom "@fakeplayer stats";
+		end;
+	}
+
+	if (.@cmd$ == "spawn") {
+		.@map$ = .@atcmd_parameters$[1];
+		.@count = atoi(.@atcmd_parameters$[2]);
+
+		if (.@count <= 0)
+			.@count = 1;
+
+		callsub S_SpawnMap, .@map$, .@count;
+		end;
+	}
+
+	if (.@cmd$ == "despawn") {
+		.@map$ = .@atcmd_parameters$[1];
+
+		if (.@map$ == "all")
+			callsub S_DespawnAll;
+		else
+			callsub S_DespawnMap, .@map$;
+
+		end;
+	}
+
+	if (.@cmd$ == "reload") {
+		callsub S_LoadChat;
+		dispbottom "[FP] Reload chat complete.";
+		end;
+	}
+
+	if (.@cmd$ == "stats") {
+		dispbottom "[FP] Active: " + .active_count + "/" + .max_total;
+
+		for (.@i = 0; .@i < getarraysize(.towns$); .@i++) {
+			.@real = getmapusers(.towns$[.@i]);
+			.@fake = getd("$FP_POP_" + .towns$[.@i]);
+			dispbottom "[FP] " + .towns$[.@i] + " real=" + .@real + " fake=" + .@fake;
+		}
+		end;
+	}
+
+	dispbottom "[FP] ใช้ @fakeplayer help";
+	end;
+
+S_IsTown:
+	.@map$ = getarg(0);
+
+	for (.@i = 0; .@i < getarraysize(.towns$); .@i++) {
+		if (.towns$[.@i] == .@map$)
+			return 1;
+	}
+
+	return 0;
+
+S_CountMap:
+	.@map$ = getarg(0);
+	.@count = 0;
+
+	for (.@i = 0; .@i < .active_count; .@i++) {
+		if (.map$[.@i] == .@map$)
+			.@count++;
+	}
+
+	return .@count;
+
+S_SpawnMap:
+	.@map$ = escape_sql(getarg(0));
+	.@count = getarg(1);
+
+	if (!callsub(S_IsTown, .@map$)) {
+		dispbottom "[FP] Map นี้ไม่อยู่ใน whitelist.";
+		return;
+	}
+
+	if (.active_count >= .max_total) {
+		dispbottom "[FP] จำนวน FP รวมเต็มแล้ว.";
+		return;
+	}
+
+	.@on_map = callsub(S_CountMap, .@map$);
+	.@free_map = .per_map_limit - .@on_map;
+	.@free_total = .max_total - .active_count;
+
+	.@count = min(.@count, .spawn_batch);
+	.@count = min(.@count, .@free_map);
+	.@count = min(.@count, .@free_total);
+
+	if (.@count <= 0) {
+		dispbottom "[FP] ไม่มี slot ว่างสำหรับเมืองนี้.";
+		return;
+	}
+
+	.@rows = query_sql(
+		"SELECT `fp_id`,`name`,`sex`,`class_id`,`base_level`,`hair_style`,`hair_color`,`cloth_color`,"
+		+ "`weapon`,`shield`,`head_top`,`head_mid`,`head_bottom`,`x`,`y` "
+		+ "FROM `fp_profile` "
+		+ "WHERE `active`=0 AND `home_map`='"+.@map$+"' "
+		+ "ORDER BY RAND() LIMIT "+.@count,
+		.@fpid,
+		.@name$,
+		.@sex,
+		.@class,
+		.@level,
+		.@hair,
+		.@haircolor,
+		.@cloth,
+		.@weapon,
+		.@shield,
+		.@top,
+		.@mid,
+		.@bottom,
+		.@x,
+		.@y
+	);
+
+	if (.@rows <= 0) {
+		dispbottom "[FP] ไม่มี profile ว่างในเมือง " + .@map$;
+		return;
+	}
+
+	for (.@i = 0; .@i < .@rows; .@i++) {
+		.@gid = fakeplayer(
+			.@map$,
+			.@x[.@i],
+			.@y[.@i],
+			.@name$[.@i],
+			.@class[.@i],
+			.@sex[.@i],
+			.@hair[.@i],
+			.@haircolor[.@i],
+			.@weapon[.@i],
+			.@shield[.@i],
+			.@top[.@i],
+			.@mid[.@i],
+			.@bottom[.@i],
+			0,
+			.@cloth[.@i]
+		);
+
+		if (!.@gid)
+			continue;
+
+		setunitdata .@gid, UMOB_DMGIMMUNE, 1;
+		setunitdata .@gid, UMOB_LEVEL, .@level[.@i];
+		setunitdata .@gid, UMOB_SPEED, 150;
+		setunittitle .@gid, "ชาวเมือง";
+
+		.fp_id[.active_count] = .@fpid[.@i];
+		.gid[.active_count] = .@gid;
+		.map$[.active_count] = .@map$;
+		.state[.active_count] = 1;
+
+		.class[.active_count] = .@class[.@i];
+		.sex[.active_count] = .@sex[.@i];
+		.hair[.active_count] = .@hair[.@i];
+		.haircolor[.active_count] = .@haircolor[.@i];
+		.cloth[.active_count] = .@cloth[.@i];
+
+		.weapon[.active_count] = .@weapon[.@i];
+		.shield[.active_count] = .@shield[.@i];
+		.headtop[.active_count] = .@top[.@i];
+		.headmid[.active_count] = .@mid[.@i];
+		.headbottom[.active_count] = .@bottom[.@i];
+
+		.home_x[.active_count] = .@x[.@i];
+		.home_y[.active_count] = .@y[.@i];
+
+		.next_chat_tick[.active_count] = gettimetick(2) + rand(.chat_min_cd, .chat_max_cd);
+
+		.walk_enabled[.active_count] = (rand(100) < .walk_chance);
+
+		if (.walk_enabled[.active_count])
+			.next_walk_tick[.active_count] = gettimetick(2) + rand(.walk_min_cd, .walk_max_cd);
+		else
+			.next_walk_tick[.active_count] = 0;
+
+		callsub S_ApplyView, .active_count;
+
+		.active_count++;
+
+		query_sql(
+			"UPDATE `fp_profile` SET "
+			+ "`active`=1,"
+			+ "`gid`="+.@gid+","
+			+ "`state`=1,"
+			+ "`map_name`='"+.@map$+"',"
+			+ "`x`="+.@x[.@i]+","
+			+ "`y`="+.@y[.@i]+","
+			+ "`last_spawn_at`=NOW(),"
+			+ "`last_save_at`=NOW() "
+			+ "WHERE `fp_id`="+.@fpid[.@i]
+		);
+	}
+
+	callsub S_RebuildTownCache;
+	dispbottom "[FP] Spawn complete: " + .@map$;
+	return;
+
+S_ApplyView:
+	.@idx = getarg(0);
+
+	if (.@idx < 0 || .@idx >= .active_count)
+		return;
+
+	.@gid = .gid[.@idx];
+
+	if (!unitexists(.@gid))
+		return;
+
+	fpview(
+		.@gid,
+		.class[.@idx],
+		.sex[.@idx],
+		.hair[.@idx],
+		.haircolor[.@idx],
+		.weapon[.@idx],
+		.shield[.@idx],
+		.headtop[.@idx],
+		.headmid[.@idx],
+		.headbottom[.@idx],
+		.cloth[.@idx]
+	);
+
+	return;
+
+S_DespawnMap:
+	.@map$ = getarg(0);
+
+	for (.@i = .active_count - 1; .@i >= 0; .@i--) {
+		if (.map$[.@i] == .@map$)
+			callsub S_RemoveIndex, .@i, 1;
+	}
+
+	callsub S_RebuildTownCache;
+	dispbottom "[FP] Despawn map complete: " + .@map$;
+	return;
+
+S_DespawnAll:
+	for (.@i = .active_count - 1; .@i >= 0; .@i--)
+		callsub S_RemoveIndex, .@i, 1;
+
+	callsub S_RebuildTownCache;
+	dispbottom "[FP] Despawn all complete.";
+	return;
+
+S_RemoveIndex:
+	.@idx = getarg(0);
+	.@save = getarg(1);
+
+	.@gid = .gid[.@idx];
+	.@fpid = .fp_id[.@idx];
+
+	if (unitexists(.@gid))
+		fpdelete(.@gid);
+
+	if (.@save) {
+		query_sql(
+			"UPDATE `fp_profile` SET "
+			+ "`active`=0,"
+			+ "`gid`=NULL,"
+			+ "`state`=0,"
+			+ "`last_save_at`=NOW() "
+			+ "WHERE `fp_id`="+.@fpid
+		);
+	}
+
+	.@last = .active_count - 1;
+
+	if (.@idx != .@last) {
+		.fp_id[.@idx] = .fp_id[.@last];
+		.gid[.@idx] = .gid[.@last];
+		.map$[.@idx] = .map$[.@last];
+		.state[.@idx] = .state[.@last];
+
+		.class[.@idx] = .class[.@last];
+		.sex[.@idx] = .sex[.@last];
+		.hair[.@idx] = .hair[.@last];
+		.haircolor[.@idx] = .haircolor[.@last];
+		.cloth[.@idx] = .cloth[.@last];
+
+		.weapon[.@idx] = .weapon[.@last];
+		.shield[.@idx] = .shield[.@last];
+		.headtop[.@idx] = .headtop[.@last];
+		.headmid[.@idx] = .headmid[.@last];
+		.headbottom[.@idx] = .headbottom[.@last];
+
+		.next_chat_tick[.@idx] = .next_chat_tick[.@last];
+
+		.home_x[.@idx] = .home_x[.@last];
+		.home_y[.@idx] = .home_y[.@last];
+		.walk_enabled[.@idx] = .walk_enabled[.@last];
+		.next_walk_tick[.@idx] = .next_walk_tick[.@last];
+	}
+
+	deletearray .fp_id[.@last], 1;
+	deletearray .gid[.@last], 1;
+	deletearray .map$[.@last], 1;
+	deletearray .state[.@last], 1;
+
+	deletearray .class[.@last], 1;
+	deletearray .sex[.@last], 1;
+	deletearray .hair[.@last], 1;
+	deletearray .haircolor[.@last], 1;
+	deletearray .cloth[.@last], 1;
+
+	deletearray .weapon[.@last], 1;
+	deletearray .shield[.@last], 1;
+	deletearray .headtop[.@last], 1;
+	deletearray .headmid[.@last], 1;
+	deletearray .headbottom[.@last], 1;
+
+	deletearray .next_chat_tick[.@last], 1;
+
+	deletearray .home_x[.@last], 1;
+	deletearray .home_y[.@last], 1;
+	deletearray .walk_enabled[.@last], 1;
+	deletearray .next_walk_tick[.@last], 1;
+
+	.active_count--;
+	return;
+
+S_SaveAll:
+	for (.@i = 0; .@i < .active_count; .@i++) {
+		.@gid = .gid[.@i];
+
+		if (!unitexists(.@gid))
+			continue;
+
+		getunitdata(.@gid, .@u);
+
+		query_sql(
+			"UPDATE `fp_profile` SET "
+			+ "`map_name`='"+escape_sql(.map$[.@i])+"',"
+			+ "`x`="+.@u[UMOB_X]+","
+			+ "`y`="+.@u[UMOB_Y]+","
+			+ "`state`="+.state[.@i]+","
+			+ "`last_save_at`=NOW() "
+			+ "WHERE `fp_id`="+.fp_id[.@i]
+		);
+	}
+
+	return;
+
+S_RebuildTownCache:
+	for (.@i = 0; .@i < getarraysize(.towns$); .@i++)
+		setd("$FP_POP_" + .towns$[.@i], 0);
+
+	for (.@i = 0; .@i < .active_count; .@i++) {
+		.@map$ = .map$[.@i];
+		setd("$FP_POP_" + .@map$, getd("$FP_POP_" + .@map$) + 1);
+	}
+
+	return;
+
+S_LoadChat:
+	deletearray .chat_msg$[0], getarraysize(.chat_msg$);
+	deletearray .chat_weight[0], getarraysize(.chat_weight);
+	deletearray .chat_cd[0], getarraysize(.chat_cd);
+
+	.chat_count = query_sql(
+		"SELECT `msg`,`weight`,`cooldown_sec` "
+		+ "FROM `fp_chat` "
+		+ "WHERE `enabled`=1 AND `category`='town' "
+		+ "ORDER BY `chat_id`",
+		.chat_msg$,
+		.chat_weight,
+		.chat_cd
+	);
+
+	if (.chat_count <= 0) {
+		setarray .chat_msg$[0],
+			"วันนี้คนเยอะดีนะ",
+			"มีใครไปตลาดไหม?",
+			"เดินเล่นในเมืองเพลินดี";
+
+		setarray .chat_weight[0], 100, 80, 50;
+		setarray .chat_cd[0], 90, 120, 180;
+
+		.chat_count = getarraysize(.chat_msg$);
+	}
+
+	return;
+
+S_RandomChat:
+	.@sum = 0;
+
+	for (.@i = 0; .@i < .chat_count; .@i++) {
+		.@w = .chat_weight[.@i];
+
+		if (.@w < 1)
+			.@w = 1;
+
+		.@sum += .@w;
+	}
+
+	.@pick = rand(1, .@sum);
+	.@msg$ = "";
+	.@cd = 0;
+
+	for (.@i = 0; .@i < .chat_count; .@i++) {
+		.@w = .chat_weight[.@i];
+
+		if (.@w < 1)
+			.@w = 1;
+
+		.@pick -= .@w;
+
+		if (.@pick <= 0) {
+			.@msg$ = .chat_msg$[.@i];
+			.@cd = .chat_cd[.@i];
+			break;
+		}
+	}
+
+	return;
+}

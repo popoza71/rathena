@@ -2129,3 +2129,168 @@ BUILDIN_FUNC(autosupportstart)
 
 	return SCRIPT_CMD_SUCCESS;
 }
+
+/*
+	Fake Player
+	fakeplayer(map, x, y, name, job_id, sex, hair_style, hair_color,
+	           weapon, shield, head_top, head_mid, head_bottom, option, cloth_color);
+
+	fpdelete(gid);
+*/
+
+BUILDIN_FUNC(fakeplayer)
+{
+	const char* mapn = script_getstr(st, 2);
+	int16 x = script_getnum(st, 3);
+	int16 y = script_getnum(st, 4);
+
+	const char* name = script_getstr(st, 5);
+	int32 sprite = script_getnum(st, 6);
+	int32 sex = script_getnum(st, 7);
+	int32 hair_style = script_getnum(st, 8);
+	int32 hair_color = script_getnum(st, 9);
+	int32 weapon = script_getnum(st, 10);
+	int32 shield = script_getnum(st, 11);
+	int32 head_top = script_getnum(st, 12);
+	int32 head_mid = script_getnum(st, 13);
+	int32 head_bottom = script_getnum(st, 14);
+	int32 option = script_getnum(st, 15);
+	int32 cloth_color = script_getnum(st, 16);
+
+	int16 m = map_mapname2mapid(mapn);
+
+	if (m < 0) {
+		ShowError("buildin_fakeplayer: map '%s' not found.\n", mapn);
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	mob_data* md = mob_once_spawn_sub(nullptr, m, x, y, name, 1002, "", SZ_SMALL, AI_NONE);
+
+	if (!md) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	md->ud.immune_attack = 1;
+
+
+	block_list* bl = reinterpret_cast<block_list*>(md);
+
+	// สำคัญ: ใช้ตัวนี้ตั้ง sprite/class
+
+	status_set_viewdata(bl, sprite);
+
+	if (md->vd) {
+		md->vd->sex = sex;
+
+		md->vd->look[LOOK_HAIR] = hair_style;
+		md->vd->look[LOOK_HAIR_COLOR] = hair_color;
+
+		md->vd->look[LOOK_WEAPON] = weapon;
+		md->vd->look[LOOK_SHIELD] = shield;
+
+		md->vd->look[LOOK_HEAD_TOP] = head_top;
+		md->vd->look[LOOK_HEAD_MID] = head_mid;
+		md->vd->look[LOOK_HEAD_BOTTOM] = head_bottom;
+
+		md->vd->look[LOOK_CLOTHES_COLOR] = cloth_color;
+	}
+
+	mob_spawn(md);
+
+	script_pushint(st, md->id);
+	return SCRIPT_CMD_SUCCESS;
+}
+
+
+
+BUILDIN_FUNC(fpview)
+{
+	int32 gid = script_getnum(st, 2);
+	int32 sprite = script_getnum(st, 3);
+	int32 sex = script_getnum(st, 4);
+	int32 hair_style = script_getnum(st, 5);
+	int32 hair_color = script_getnum(st, 6);
+	int32 weapon = script_getnum(st, 7);
+	int32 shield = script_getnum(st, 8);
+	int32 head_top = script_getnum(st, 9);
+	int32 head_mid = script_getnum(st, 10);
+	int32 head_bottom = script_getnum(st, 11);
+	int32 cloth_color = script_getnum(st, 12);
+
+	struct block_list* bl = map_id2bl(gid);
+
+	if (!bl) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	mob_data* md = BL_CAST(BL_MOB, bl);
+
+	if (!md || !md->vd) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	// ห้าม status_set_viewdata() ตรงนี้
+	// เพราะมัน reset เป็น default ของ class
+
+	md->vd->sex = sex;
+
+	md->vd->look[LOOK_HAIR] = hair_style;
+	md->vd->look[LOOK_HAIR_COLOR] = hair_color;
+
+	md->vd->look[LOOK_WEAPON] = weapon;
+	md->vd->look[LOOK_SHIELD] = shield;
+
+	md->vd->look[LOOK_HEAD_TOP] = head_top;
+	md->vd->look[LOOK_HEAD_MID] = head_mid;
+	md->vd->look[LOOK_HEAD_BOTTOM] = head_bottom;
+
+	md->vd->look[LOOK_CLOTHES_COLOR] = cloth_color;
+
+	script_pushint(st, 1);
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(fpdelete)
+{
+	int32 gid = script_getnum(st, 2);
+	struct block_list* bl = map_id2bl(gid);
+
+	if (!bl) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	unit_free(bl, CLR_OUTSIGHT);
+	script_pushint(st, 1);
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(fpwalk)
+{
+	int32 gid = script_getnum(st, 2);
+	int16 x = script_getnum(st, 3);
+	int16 y = script_getnum(st, 4);
+
+	block_list* bl = map_id2bl(gid);
+
+	if (!bl) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	mob_data* md = BL_CAST(BL_MOB, bl);
+
+	if (!md) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	unit_walktoxy(bl, x, y, 0);
+
+	script_pushint(st, 1);
+	return SCRIPT_CMD_SUCCESS;
+}

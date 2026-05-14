@@ -39,3 +39,8 @@ BUILDIN_DEF(autosupportintinfo, "i?"),
 BUILDIN_DEF(autosupportset, "s"),
 BUILDIN_DEF(autosupportclear, "i?"),
 BUILDIN_DEF(autosupportstart, "i?"),
+
+BUILDIN_DEF(fakeplayer,"siisiiiiiiiiiii"),
+BUILDIN_DEF(fpview,"iiiiiiiiiii"),
+BUILDIN_DEF(fpdelete,"i"),
+BUILDIN_DEF(fpwalk, "iii"),
