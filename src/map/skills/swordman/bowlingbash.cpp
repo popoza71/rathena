@@ -20,9 +20,11 @@ void SkillBowlingBash::modifyDamageData(Damage& dmg, const block_list& src, cons
 
 	if (sd != nullptr && sd->status.weapon == W_2HSWORD) {
 		if (dmg.miscflag >= 4)
-			dmg.div_ = 4;
+			//dmg.div_ = 4;
+			dmg.div_ = battle_config.bowling_bash_max_count_re; //puppy
 		else if (dmg.miscflag >= 2)
-			dmg.div_ = 3;
+			//dmg.div_ = 3;
+			dmg.div_ = battle_config.bowling_bash_min_count_re; //puppy
 	}
 #else
 	dmg.blewcount = 0;

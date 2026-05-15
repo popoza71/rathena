@@ -16,7 +16,8 @@ void SkillBackStab::modifyDamageData(Damage& dmg, const block_list& src, const b
 	const map_session_data* sd = BL_CAST(BL_PC, &src);
 
 	if (sd != nullptr && sd->status.weapon == W_DAGGER)
-		dmg.div_ = 2;
+		//dmg.div_ = 2;
+		dmg.div_ = battle_config.backstab_dagger_hit; //puppy
 #endif
 }
 
