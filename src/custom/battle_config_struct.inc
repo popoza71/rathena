@@ -84,6 +84,7 @@
 	int32 char_bonus_same_job_limit;
 
 	int32 show_shadow_weapon;
+	int32 tick_dead_get_item;
 	
 	// auto attack
 	int32 autoattack_skillheal;

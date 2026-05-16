@@ -1370,8 +1370,20 @@ int32 party_share_loot(struct party_data* p, map_session_data* sd, struct item* 
 	TBL_PC* target = nullptr;
 	int32 i;
 
-	if (p && p->party.item&2 && (first_charid || !(battle_config.party_share_type&1))) {
-		//item distribution to party members.
+	//if (p && p->party.item&2 && (first_charid || !(battle_config.party_share_type&1))) {
+	
+	//puppy trick dead getitem
+	const bool picker_trickdead =
+		(!battle_config.tick_dead_get_item &&
+			sd != nullptr &&
+			sd->sc.getSCE(SC_TRICKDEAD) != nullptr);
+
+	if (p && !picker_trickdead &&
+		(p->party.item & 2) &&
+		(first_charid || !(battle_config.party_share_type & 1))) {
+	//puppy trick dead getitem
+
+	//item distribution to party members.
 		if (battle_config.party_share_type&2) { // Round Robin
 			TBL_PC* psd;
 
@@ -1382,7 +1394,13 @@ int32 party_share_loot(struct party_data* p, map_session_data* sd, struct item* 
 				if (i >= MAX_PARTY)
 					i = 0;	// reset counter to 1st person in party so it'll stop when it reaches "itemc"
 
-				if( (psd = p->data[i].sd) == nullptr || sd->m != psd->m || pc_isdead(psd) || (battle_config.idle_no_share && pc_isidle_party(psd)) )
+				//if( (psd = p->data[i].sd) == nullptr || sd->m != psd->m || pc_isdead(psd) || (battle_config.idle_no_share && pc_isidle_party(psd)) )
+				//puppy trick dead getitem
+				if( (psd = p->data[i].sd) == nullptr || sd->m != psd->m ||
+					pc_isdead(psd) ||
+					(!battle_config.tick_dead_get_item && psd->sc.getSCE(SC_TRICKDEAD) != nullptr) ||
+					(battle_config.idle_no_share && pc_isidle_party(psd)) )
+				//puppy trick dead getitem
 					continue;
 
 				if (pc_additem(psd,item,item->amount,LOG_TYPE_PICKDROP_PLAYER))
@@ -1399,7 +1417,14 @@ int32 party_share_loot(struct party_data* p, map_session_data* sd, struct item* 
 
 			//Collect pick candidates
 			for (i = 0; i < MAX_PARTY; i++) {
-				if( (psd[count] = p->data[i].sd) == nullptr || psd[count]->m != sd->m || pc_isdead(psd[count]) || (battle_config.idle_no_share && pc_isidle_party(psd[count])) )
+				//if( (psd[count] = p->data[i].sd) == nullptr || psd[count]->m != sd->m || pc_isdead(psd[count]) || (battle_config.idle_no_share && pc_isidle_party(psd[count])) )
+				//puppy trick dead getitem
+				if( (psd[count] = p->data[i].sd) == nullptr || psd[count]->m != sd->m ||
+					pc_isdead(psd[count]) ||
+					(!battle_config.tick_dead_get_item && psd[count]->sc.getSCE(SC_TRICKDEAD) != nullptr) ||
+					(battle_config.idle_no_share && pc_isidle_party(psd[count])) )
+				//puppy trick dead getitem
+
 					continue;
 
 				count++;

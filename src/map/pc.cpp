@@ -7600,7 +7600,12 @@ bool pc_takeitem(map_session_data *sd,flooritem_data *fitem)
 		return false;
 
 	party_data* p = party_search(sd->status.party_id);
-	bool share = (p != nullptr && (p->party.item&1));
+	//bool share = (p != nullptr && (p->party.item&1));
+	//puppy trick dead getitem
+	bool share = (p != nullptr &&
+		(p->party.item & 1) &&
+		(battle_config.tick_dead_get_item || sd->sc.getSCE(SC_TRICKDEAD) == nullptr));
+	//puppy trick dead getitem
 
 	// Time the player needs to wait until the item can be taken
 	// By default the player needs to wait for top, second and third attacker loot priority times
