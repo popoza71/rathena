@@ -1858,10 +1858,14 @@ static int32 pet_ai_sub_hard(pet_data *pd, map_session_data *sd, t_tick tick)
 			return 0;
 		} else {
 			flooritem_data *fitem = (flooritem_data *)target;
-
+			/*
 			if(pd->loot->count < pd->loot->max) {
 				memcpy(&pd->loot->item[pd->loot->count++],&fitem->item,sizeof(pd->loot->item[0]));
 				pd->loot->weight += itemdb_weight(fitem->item.nameid)*fitem->item.amount;
+				map_clearflooritem(target);
+			}
+			*/
+			if (!pc_additem(sd, &fitem->item, fitem->item.amount, LOG_TYPE_PICKDROP_PLAYER)) {
 				map_clearflooritem(target);
 			}
 

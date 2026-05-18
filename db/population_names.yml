@@ -1,0 +1,196 @@
+# This file is a part of rAthena.
+#   Copyright(C) 2021 rAthena Development Team
+#   https://rathena.org - https://github.com/rathena
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+# Population Engine Names Database
+###########################################################################
+#
+# Fake PC name generation profiles for population shells.
+# Loaded at map-server startup and with @reloadpopengine.
+# Referenced from population_engine.yml via NameProfile: <key>.
+#
+###########################################################################
+# - GlobalLists:                 Shared word pools used by all name generation strategies.
+#     Prefixes:                  [ list ] โ€” short prefix syllables.
+#     SyllablesStart/Mid/End:    [ list ] โ€” syllable parts for the syllables strategy.
+#     Adjectives / Nouns:        [ list ] โ€” word pools for the adjective_noun strategy.
+#     Blocklist:                 [ list ] โ€” substrings to reject (case-insensitive).
+# - Profile: <key>               Named profile; reference via NameProfile: in population_engine.yml.
+#     Strategy: <value>          Name generation method:
+#       syllables      โ€” concatenate Start + Mid + End syllable parts.
+#       adjective_noun โ€” combine a random Adjective + Noun.
+#       adj_noun       โ€” alias for adjective_noun.
+#       pick_one       โ€” pick a full name directly from a Names list.
+#       bot_index      โ€” Bot_<index> (fallback / debug).
+#       prefix_number  โ€” <prefix><number>.
+###########################################################################
+
+Header:
+  Type: POPULATION_NAMES_DB
+  Version: 1
+
+Body:
+
+  # =========================================================
+  # Global Lists
+  # =========================================================
+  - GlobalLists:
+
+      Prefixes:
+        [
+          "Beer", "Moo", "Tank", "Heal", "Solo",
+          "Dark", "Mini", "Tao", "Nong", "Pang",
+          "Fang", "Mhee", "Aun", "Boss", "Gun",
+          "Krit", "Zero", "Ice", "Milk", "Best"
+        ]
+
+      SyllablesStart:
+        [
+          "หมู", "แมว", "ต้าว", "นัก", "สาย",
+          "เทพ", "บอส", "ฮัน", "แอส", "พระ",
+          "พ่อ", "เจ้า", "เด็ก", "มังกร", "ครีม",
+          "เบีย", "มิ้น", "กัส", "เนม", "ไอซ์"
+        ]
+
+      SyllablesMid:
+        [
+          "ปิ้ง", "อ้วน", "ฟรี", "ฟาร์ม", "บัพ",
+          "ยิง", "หลบ", "ตี", "คุง", "จัง",
+          "โกะ", "น้อย", "เทพ", "มัน", "ซ่า",
+          "แดง", "ฟ้า", "ทอง", "กิล", "โหด"
+        ]
+
+      SyllablesEnd:
+        [
+          "คับ", "ครับ", "จ้า", "TH", "Kun",
+          "Za", "XD", "007", "999", "เทพ",
+          "สายฟรี", "คนจน", "นักฟาร์ม", "มหาเทพ",
+          "แห่งPron", "ออนไลน์", "ตัวตึง", "คุง"
+        ]
+
+      Adjectives:
+        [
+          "เทพ", "โหด", "ตึง", "สายฟรี", "สายเติม",
+          "ตัวตึง", "นักฟาร์ม", "ใจเย็น", "หัวร้อน",
+          "หล่อ", "น่ารัก", "อ้วน", "บาง", "ไว",
+          "มือใหม่", "เก๋า", "ไร้เทียมทาน", "เลือดเย็น",
+          "วาปไว", "ฟาร์มหนัก"
+        ]
+
+      Nouns:
+        [
+          "นักดาบ", "แอส", "ฮัน", "พระ", "วิ",
+          "พ่อค้า", "อัลเค", "ไนท์", "ครูเสด", "แชมป์",
+          "นักล่า", "คนขายของ", "เด็กปั้น", "นักตีบวก",
+          "นักเปิดกล่อง", "สายแบก", "มือบัพ", "มือแจก",
+          "นักฟาร์ม", "ตัวป่วน"
+        ]
+
+      Blocklist:
+        [
+          "gm",
+          "admin",
+          "staff",
+          "mod",
+          "hack",
+          "cheat",
+          "bot"
+        ]
+
+  # =========================================================
+  # Default Profile
+  # =========================================================
+  - Profile: default
+    Strategy: syllables
+    MinLen: 2
+    MaxLen: 22
+
+  # =========================================================
+  # RO Thai Style
+  # =========================================================
+  - Profile: thai_ro
+    Strategy: adjective_noun
+    MinLen: 3
+    MaxLen: 22
+
+  # =========================================================
+  # Town NPC Style
+  # =========================================================
+  - Profile: thai_town
+    Strategy: pick_one
+    MinLen: 2
+    MaxLen: 22
+    Pool:
+      - "หมูปิ้ง"
+      - "แมวอ้วน"
+      - "ต้าวมิ้น"
+      - "กัสจัง"
+      - "เบียร์คุง"
+      - "HealMeที"
+      - "TankKub"
+      - "Soloสายฟรี"
+      - "พระบัพ"
+      - "ฮันยิงนก"
+      - "เด็กปั้น"
+      - "วิสายฟ้า"
+      - "ร้านแดงราคาถูก"
+      - "รับซื้อขยะ"
+      - "ตีบวกแตกอีกละ"
+      - "ขอฮีลที"
+      - "แอบฟาร์ม"
+      - "พ่อค้าหล่อ"
+      - "MVPอยู่ไหน"
+      - "ของตกฉันเอง"
+      - "ฟาร์มวนไป"
+      - "กดผิดอีกแล้ว"
+      - "วาปผิดชีวิตเปลี่ยน"
+      - "มอนแย่งกันตี"
+      - "มือใหม่หัดตี"
+      - "หลงแมพอีกแล้ว"
+      - "พระสายฟรี"
+      - "นักดาบคนจน"
+      - "แมวส้มออนไลน์"
+      - "เด็กตีมอน"
+
+  # =========================================================
+  # Gamer Tag Style
+  # =========================================================
+  - Profile: gamer_tag
+    Strategy: pick_one
+    MinLen: 3
+    MaxLen: 22
+    Pool:
+      - "XxShadowxX"
+      - "BeerTH"
+      - "Tank999"
+      - "SoloPlayer"
+      - "HealOnly"
+      - "NoobZa"
+      - "DarkAssa"
+      - "MiniWizard"
+      - "เทพเกินต้าน"
+      - "ฟาร์มทั้งคืน"
+      - "ตัวตึงPron"
+      - "ตีบวกไม่แตก"
+      - "หมูบินXD"
+      - "แอสสายหลบ"
+      - "เด็กแบกตี้"
+      - "MVPHunter"
+      - "คนมันเทพ"
+      - "ZeroDamage"
+      - "LordOfFarm"
+      - "ร้านนี้ถูกสุด"

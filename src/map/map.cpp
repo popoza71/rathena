@@ -49,6 +49,8 @@
 #include "path.hpp"
 #include "pc.hpp"
 #include "pet.hpp"
+#include "population_engine.hpp"
+#include "population_engine/runtime/population_engine_combat.hpp"
 #include "quest.hpp"
 #include "storage.hpp"
 #include "trade.hpp"
@@ -2315,7 +2317,9 @@ int32 map_quit(map_session_data *sd) {
 
 	pc_itemcd_do(sd,false);
 
-	npc_script_event( *sd, NPCE_LOGOUT );
+	//npc_script_event( *sd, NPCE_LOGOUT );
+	if (!IS_POPULATION_ENGINE_ACCOUNT_ID(sd->status.account_id))
+		npc_script_event( *sd, NPCE_LOGOUT );
 
 	//Unit_free handles clearing the player related data,
 	//map_quit handles extra specific data which is related to quitting normally
@@ -2380,7 +2384,9 @@ int32 map_quit(map_session_data *sd) {
 	pc_clean_skilltree(sd);
 	pc_crimson_marker_clear(sd);
 	pc_macro_detector_disconnect(*sd);
-	chrif_save(sd, CSAVE_QUIT|CSAVE_INVENTORY|CSAVE_CART);
+	//chrif_save(sd, CSAVE_QUIT|CSAVE_INVENTORY|CSAVE_CART);
+	if (!IS_POPULATION_ENGINE_ACCOUNT_ID(sd->status.account_id))
+		chrif_save(sd, CSAVE_QUIT|CSAVE_INVENTORY|CSAVE_CART);
 	unit_free_pc(sd);
 	// Party Bonus
 	if( sd->status.party_id && battle_config.party_bonus_system_enable ){
@@ -4583,9 +4589,14 @@ int32 cleanup_sub(block_list *bl, va_list ap)
 	nullpo_ret(bl);
 
 	switch(bl->type) {
-		case BL_PC:
-			map_quit((map_session_data *) bl);
-			break;
+		//case BL_PC:
+		//	map_quit((map_session_data *) bl);
+		case BL_PC: {
+			map_session_data *sd_bl = (map_session_data *)bl;
+			if (!IS_POPULATION_ENGINE_ACCOUNT_ID(sd_bl->status.account_id))
+				map_quit(sd_bl);
+		break;
+		}
 		case BL_NPC:
 			npc_unload((npc_data *)bl,false);
 			break;
@@ -5071,9 +5082,15 @@ void MapServer::finalize(){
 	channel_config.closing = true;
 
 	//Ladies and babies first.
+	// Population shells are fake PCs managed by do_final_population_engine below;
+	// skip them here so only real connected players are cleaned up by map_quit.
 	struct s_mapiterator* iter = mapit_getallusers();
-	for( map_session_data* sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) )
+	//for( map_session_data* sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) )
+	for( map_session_data* sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) ) {
+		if (IS_POPULATION_ENGINE_ACCOUNT_ID(sd->status.account_id))
+			continue;
 		map_quit(sd);
+	}
 	mapit_free(iter);
 
 	for (int32 i = 0; i < map_num; i++) {
@@ -5098,6 +5115,9 @@ void MapServer::finalize(){
 	id_db->foreach(id_db,cleanup_db_sub);
 	chrif_char_reset_offline();
 	chrif_flush_fifo();
+
+	do_final_population_engine();
+	do_final_population_engine_combat();
 
 	do_final_atcommand();
 	do_final_battle();
@@ -5385,8 +5405,12 @@ void MapServer::handle_shutdown(){
 
 	map_session_data* sd;
 	struct s_mapiterator* iter = mapit_getallusers();
-	for( sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) )
+	//for( sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) )
+	for( sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); sd = (TBL_PC*)mapit_next(iter) ) {
+		if (IS_POPULATION_ENGINE_ACCOUNT_ID(sd->status.account_id))
+			continue; // population shells have no real socket; cleaned up in do_final_population_engine
 		clif_GM_kick(nullptr, sd);
+	}
 	mapit_free(iter);
 	flush_fifos();
 }
@@ -5519,6 +5543,10 @@ bool MapServer::initialize( int32 argc, char *argv[] ){
 	do_init_duel();
 	do_init_vending();
 	do_init_buyingstore();
+
+	do_init_population_engine(); // register autosummon timer func; InitScript in equipment YAML uses parse_script after this
+	do_init_population_engine_combat();
+	do_init_population_engine_load_databases(); // after job_db + item_db: db/population_engine.yml validates Job and item IDs
 
 // (^~_~^) Color Nicks Start
 

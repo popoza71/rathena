@@ -55,6 +55,8 @@
 #include "party.hpp" // party_search()
 #include "pc_groups.hpp"
 #include "pet.hpp" // pet_unlocktarget()
+#include "population_engine.hpp"
+#include "population_engine/runtime/population_engine_combat.hpp"
 #include "quest.hpp"
 #include "skill.hpp" // skill_isCopyable()
 #include "script.hpp" // struct script_reg, struct script_regstr
@@ -65,6 +67,10 @@
 #include "vending.hpp" // struct s_vending
 
 using namespace rathena;
+
+map_session_data::~map_session_data() {
+	population_engine_combat_cleanup_player(this);
+}
 
 JobDatabase job_db;
 
@@ -2148,9 +2154,11 @@ uint8 pc_isequip( const map_session_data* sd, int32 n )
 		return ITEM_EQUIP_ACK_FAIL;
 
 	if (item->equip&EQP_AMMO) {
+		const bool pop_pc = population_engine_is_population_pc(sd->id);
 		switch (item->subtype) {
 			case AMMO_ARROW:
-				if (battle_config.ammo_check_weapon && sd->status.weapon != W_BOW && sd->status.weapon != W_MUSICAL && sd->status.weapon != W_WHIP) {
+				//if (battle_config.ammo_check_weapon && sd->status.weapon != W_BOW && sd->status.weapon != W_MUSICAL && sd->status.weapon != W_WHIP) {
+				if (!pop_pc && battle_config.ammo_check_weapon && sd->status.weapon != W_BOW && sd->status.weapon != W_MUSICAL && sd->status.weapon != W_WHIP) {
 					clif_msg( *sd, MSI_FAIL_NEED_EQUIPPED_BOW );
 					return ITEM_EQUIP_ACK_FAIL;
 				}
@@ -2161,7 +2169,8 @@ uint8 pc_isequip( const map_session_data* sd, int32 n )
 				break;
 			case AMMO_BULLET:
 			case AMMO_SHELL:
-				if (battle_config.ammo_check_weapon && sd->status.weapon != W_REVOLVER && sd->status.weapon != W_RIFLE && sd->status.weapon != W_GATLING && sd->status.weapon != W_SHOTGUN
+				//if (battle_config.ammo_check_weapon && sd->status.weapon != W_REVOLVER && sd->status.weapon != W_RIFLE && sd->status.weapon != W_GATLING && sd->status.weapon != W_SHOTGUN
+				if (!pop_pc && battle_config.ammo_check_weapon && sd->status.weapon != W_REVOLVER && sd->status.weapon != W_RIFLE && sd->status.weapon != W_GATLING && sd->status.weapon != W_SHOTGUN
 #ifdef RENEWAL
 					&& sd->status.weapon != W_GRENADE
 #endif
@@ -2172,18 +2181,21 @@ uint8 pc_isequip( const map_session_data* sd, int32 n )
 				break;
 #ifndef RENEWAL
 			case AMMO_GRENADE:
-				if (battle_config.ammo_check_weapon && sd->status.weapon != W_GRENADE) {
+				//if (battle_config.ammo_check_weapon && sd->status.weapon != W_GRENADE) {
+				if (!pop_pc && battle_config.ammo_check_weapon && sd->status.weapon != W_GRENADE) {
 					clif_msg( *sd, MSI_WRONG_BULLET );
 					return ITEM_EQUIP_ACK_FAIL;
 				}
 				break;
 #endif
 			case AMMO_CANNONBALL:
-				if (!pc_ismadogear(sd) && (sd->status.class_ == JOB_MECHANIC_T || sd->status.class_ == JOB_MECHANIC)) {
+				//if (!pc_ismadogear(sd) && (sd->status.class_ == JOB_MECHANIC_T || sd->status.class_ == JOB_MECHANIC)) {
+				if (!pop_pc && !pc_ismadogear(sd) && (sd->status.class_ == JOB_MECHANIC_T || sd->status.class_ == JOB_MECHANIC)) {
 					clif_msg( *sd, MSI_USESKILL_FAIL_MADOGEAR ); // Item can only be used when Mado Gear is mounted.
 					return ITEM_EQUIP_ACK_FAIL;
 				}
-				if (sd->state.active && !pc_iscarton(sd) && //Check if sc data is already loaded
+				//if (sd->state.active && !pc_iscarton(sd) && //Check if sc data is already loaded
+				if (!pop_pc && sd->state.active && !pc_iscarton(sd) && //Check if sc data is already loaded
 					(sd->status.class_ == JOB_GENETIC_T || sd->status.class_ == JOB_GENETIC)) {
 					clif_msg( *sd, MSI_USESKILL_FAIL_CART ); // Only available when cart is mounted.
 					return ITEM_EQUIP_ACK_FAIL;
@@ -10895,7 +10907,8 @@ int32 pc_resetskill(map_session_data* sd, int32 flag)
 		if( i&OPTION_CART && pc_checkskill(sd, MC_PUSHCART) )
 			i &= ~OPTION_CART;
 #else
-		if( sd->sc.getSCE(SC_PUSH_CART) )
+		//if( sd->sc.getSCE(SC_PUSH_CART) )
+		if( sd->sc.getSCE(SC_PUSH_CART) && !population_engine_is_population_pc(sd->id) )
 			pc_setcart(sd, 0);
 #endif
 		if( i != sd->sc.option )
@@ -11144,6 +11157,10 @@ void pc_damage(map_session_data *sd,block_list *src,uint32 hp, uint32 sp, uint32
 	if(battle_config.prevent_logout_trigger&PLT_DAMAGE)
 		sd->canlog_tick = gettick();
 
+	// Population shell: record the hit so reactive conditions can detect non-mob attackers.
+	if (sd->state.population_combat)
+		sd->pop.last_damage_received = static_cast<int>(hp);
+	population_engine_on_shell_damaged(sd, src);
 
 	if((!sd->aa.teleport.use_teleport || !sd->aa.teleport.use_flywing) && sd->aa.teleport.min_hp && (status->hp * 100 / sd->aa.teleport.min_hp) < sd->status.max_hp)
 		aa_teleport(sd);
@@ -11414,7 +11431,9 @@ int32 pc_dead(map_session_data *sd,block_list *src)
 	if (src && src->type == BL_PC) {
 		map_session_data *ssd = (map_session_data *)src;
 		pc_setparam(ssd, SP_KILLEDRID, sd->id);
-		npc_script_event( *ssd, NPCE_KILLPC );
+		//npc_script_event( *ssd, NPCE_KILLPC );
+		if (!IS_POPULATION_ENGINE_ACCOUNT_ID(ssd->status.account_id))
+			npc_script_event( *ssd, NPCE_KILLPC );
 
 		if (battle_config.pk_mode&2) {
 			ssd->status.manner -= 5;
@@ -11586,6 +11605,8 @@ int32 pc_dead(map_session_data *sd,block_list *src)
 			map_session_data *ssd = (map_session_data *)src;
 			ssd->pvp_point++;
 			ssd->pvp_won++;
+			if (population_engine_is_population_pc(ssd->id) && !population_engine_is_population_pc(sd->id))
+				population_engine_on_shell_kills_player(ssd, sd);
 		}
 		//if( sd->pvp_point < 0 ) {
 		if( sd->pvp_point < 0 && !mapdata->getMapFlag(MF_MAPMVP) ) {
@@ -11612,6 +11633,30 @@ int32 pc_dead(map_session_data *sd,block_list *src)
 	//Reset "can log out" tick.
 	if( battle_config.prevent_logout )
 		sd->canlog_tick = gettick() - battle_config.prevent_logout;
+
+	// Population shells with Flags: mortal respawn automatically.
+	if (population_engine_is_population_pc(sd->id))
+		population_engine_on_shell_death(sd);
+
+	// Population shell kill chat: fires on any map type (arenas, PvP, etc.)
+	if (!population_engine_is_population_pc(sd->id)) {
+		if (src && src->type == BL_PC) {
+			map_session_data *killer = (map_session_data*)src;
+			if (population_engine_is_population_pc(killer->id))
+				population_engine_on_shell_kills_player(killer, sd);
+		} else if (src && src->type == BL_SKILL) {
+			const struct skill_unit *su = (const struct skill_unit*)src;
+			if (su->group) {
+				block_list *owner_bl = map_id2bl(su->group->src_id);
+				if (owner_bl && owner_bl->type == BL_PC) {
+					map_session_data *killer = (map_session_data*)owner_bl;
+					if (population_engine_is_population_pc(killer->id))
+						population_engine_on_shell_kills_player(killer, sd);
+				}
+			}
+		}
+	}
+
 	return 1;
 }
 
@@ -12762,7 +12807,8 @@ bool pc_setcart(map_session_data *sd,int32 type) {
 	if( type < 0 || type > MAX_CARTS )
 		return false;// Never trust the values sent by the client! [Skotlex]
 
-	if( pc_checkskill(sd,MC_PUSHCART) <= 0 && type != 0 )
+	//if( pc_checkskill(sd,MC_PUSHCART) <= 0 && type != 0 )
+	if( pc_checkskill(sd,MC_PUSHCART) <= 0 && type != 0 && !population_engine_is_population_pc(sd->id) )
 		return false;// Push cart is required
 
 #ifdef NEW_CARTS
@@ -12803,7 +12849,8 @@ bool pc_setcart(map_session_data *sd,int32 type) {
 void pc_setfalcon(map_session_data* sd, int32 flag)
 {
 	if( flag ){
-		if( pc_checkskill(sd,HT_FALCON)>0 )	// add falcon if he have the skill
+		//if( pc_checkskill(sd,HT_FALCON)>0 )	// add falcon if he have the skill
+		if( pc_checkskill(sd,HT_FALCON)>0 || population_engine_is_population_pc(sd->id) )	// add falcon if he have the skill
 			pc_setoption(sd,sd->sc.option|OPTION_FALCON);
 	} else if( pc_isfalcon(sd) ){
 		pc_setoption(sd,sd->sc.option&~OPTION_FALCON); // remove falcon
@@ -12819,7 +12866,8 @@ void pc_setriding(map_session_data* sd, int32 flag)
 		return;
 
 	if( flag ){
-		if( pc_checkskill(sd,KN_RIDING) > 0 ) // add peco
+		//if( pc_checkskill(sd,KN_RIDING) > 0 ) // add peco
+		if( pc_checkskill(sd,KN_RIDING) > 0 || population_engine_is_population_pc(sd->id) ) // add peco
 			pc_setoption(sd, sd->sc.option|OPTION_RIDING);
 	} else if( pc_isriding(sd) ){
 			pc_setoption(sd, sd->sc.option&~OPTION_RIDING);
