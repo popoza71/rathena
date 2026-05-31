@@ -3698,16 +3698,16 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 		}
 	}
 
-	if( !(type&1) && !map_getmapflag(m, MF_NOMOBLOOT) && !md->state.rebirth && (
+	if (!(type & 1) && !map_getmapflag(m, MF_NOMOBLOOT) && !md->state.rebirth && (
 		!md->special_state.ai || //Non special mob
 		battle_config.alchemist_summon_reward == 2 || //All summoned give drops
-		(md->special_state.ai==AI_SPHERE && battle_config.alchemist_summon_reward == 1) //Marine Sphere Drops items.
-		) )
+		(md->special_state.ai == AI_SPHERE && battle_config.alchemist_summon_reward == 1) //Marine Sphere Drops items.
+		))
 	{ // Item Drop
 		int32 drop_rate, drop_modifier = 100;
 
 #ifdef RENEWAL_DROP
-		drop_modifier = pc_level_penalty_mod( first_sd != nullptr ? first_sd : second_sd != nullptr ? second_sd : third_sd, PENALTY_DROP, nullptr, md );
+		drop_modifier = pc_level_penalty_mod(first_sd != nullptr ? first_sd : second_sd != nullptr ? second_sd : third_sd, PENALTY_DROP, nullptr, md);
 #endif
 
 		std::shared_ptr<s_item_drop_list> dlist = std::make_shared<s_item_drop_list>();
@@ -3718,152 +3718,195 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 		dlist->second_charid = (second_sd ? second_sd->status.char_id : 0);
 		dlist->third_charid = (third_sd ? third_sd->status.char_id : 0);
 
+
+		// Free-character loot context for this monster kill.
+		// Resolve the session that would receive drops/rewards for this kill.
+		map_session_data* target_sd = mvp_sd ? mvp_sd : (sd ? sd : first_sd);
+		bool is_free_character = (target_sd != nullptr
+			&& pc_readaccountreg(target_sd, add_str("#FREE_CHARACTER")) > 0);
+		bool free_character_msg = false;
+
+		// One overhead message per monster kill, even if multiple reward paths are blocked.
+		auto notify_free_character_block = [&]() {
+			if (free_character_msg || target_sd == nullptr)
+				return;
+
+			char output[128];
+			safestrncpy(output, msg_txt(target_sd, 2531), sizeof(output));
+
+			// Branch note:
+			// In your derived branch, prefer clif_disp_overhead(target_sd, output).
+			// Do not use &target_sd->bl if your compiler already rejects that member access.
+			clif_disp_overhead(target_sd, output);
+
+			free_character_msg = true;
+			};
+
+
 		// These trigger for the killer of the monster
-		if(sd) {
+		if (sd) {
+
 			// process script-granted extra drop bonuses
-			for (const auto &it : sd->add_drop) {
-				if (!&it || (!it.nameid && !it.group))
-					continue;
-				if ((it.race < RC_NONE_ && it.race == -md->mob_id) || //Race < RC_NONE_, use mob_id
-					(it.race == RC_ALL || it.race == status->race) || //Matched race
-					(it.class_ == CLASS_ALL || it.class_ == status->class_)) //Matched class
-				{
-					//Check if the bonus item drop rate should be multiplied with mob level/10 [Lupus]
-					if (it.rate < 0) {
-						//It's negative, then it should be multiplied. with mob_level/10
-						//rate = base_rate * (mob_level/10) + 1
-						drop_rate = (-it.rate) * md->level / 10 + 1;
-						drop_rate = cap_value(drop_rate, max(battle_config.item_drop_adddrop_min,1), min(battle_config.item_drop_adddrop_max,10000));
-					}
-					else
-						//it's positive, then it goes as it is
-						drop_rate = it.rate;
+			if (is_free_character) {
+				notify_free_character_block();
+			}
+			else {
 
-					if (rnd()%10000 >= drop_rate)
+				// process script-granted extra drop bonuses
+				for (const auto& it : sd->add_drop) {
+					if (!&it || (!it.nameid && !it.group))
 						continue;
+					if ((it.race < RC_NONE_ && it.race == -md->mob_id) || //Race < RC_NONE_, use mob_id
+						(it.race == RC_ALL || it.race == status->race) || //Matched race
+						(it.class_ == CLASS_ALL || it.class_ == status->class_)) //Matched class
+					{
+						//Check if the bonus item drop rate should be multiplied with mob level/10 [Lupus]
+						if (it.rate < 0) {
+							//It's negative, then it should be multiplied. with mob_level/10
+							//rate = base_rate * (mob_level/10) + 1
+							drop_rate = (-it.rate) * md->level / 10 + 1;
+							drop_rate = cap_value(drop_rate, max(battle_config.item_drop_adddrop_min, 1), min(battle_config.item_drop_adddrop_max, 10000));
+						}
+						else
+							//it's positive, then it goes as it is
+							drop_rate = it.rate;
 
-					std::shared_ptr<s_mob_drop> mobdrop = std::make_shared<s_mob_drop>();
+						if (rnd() % 10000 >= drop_rate)
+							continue;
 
-					if (it.nameid > 0) {
-						mobdrop->nameid = it.nameid;
-						mobdrop->rate = drop_rate;
+						std::shared_ptr<s_mob_drop> mobdrop = std::make_shared<s_mob_drop>();
+
+						if (it.nameid > 0) {
+							mobdrop->nameid = it.nameid;
+							mobdrop->rate = drop_rate;
+						}
+						else {
+							std::shared_ptr<s_item_group_entry> entry = itemdb_group.get_random_entry(it.group, 1, GROUP_ALGORITHM_DROP);
+							if (entry == nullptr) continue;
+							mobdrop->nameid = entry->nameid;
+							mobdrop->rate = entry->adj_rate * drop_rate / 10000;
+						}
+
+						std::shared_ptr<s_item_drop> ditem = mob_setdropitem(mobdrop, 1, md->mob_id);
+
+						mob_item_drop(md, dlist, ditem, 0, mobdrop->rate, homkillonly || merckillonly);
 					}
-					else {
-						std::shared_ptr<s_item_group_entry> entry = itemdb_group.get_random_entry(it.group, 1, GROUP_ALGORITHM_DROP);
-						if (entry == nullptr) continue;
-						mobdrop->nameid = entry->nameid;
-						mobdrop->rate = entry->adj_rate * drop_rate / 10000;
-					}
-
-					std::shared_ptr<s_item_drop> ditem = mob_setdropitem(mobdrop, 1, md->mob_id);
-
-					mob_item_drop(md, dlist, ditem, 0, mobdrop->rate, homkillonly || merckillonly);
 				}
 			}
 
 			// process script-granted zeny bonus (get_zeny_num) [Skotlex]
-			if( sd->bonus.get_zeny_num && rnd()%100 < sd->bonus.get_zeny_rate ) {
+			//if( sd->bonus.get_zeny_num && rnd()%100 < sd->bonus.get_zeny_rate ) {
+			if (is_free_character) {
+				notify_free_character_block();
+			}
+			else if (sd->bonus.get_zeny_num && rnd() % 100 < sd->bonus.get_zeny_rate) {
+
 				i = sd->bonus.get_zeny_num > 0 ? sd->bonus.get_zeny_num : -md->level * sd->bonus.get_zeny_num;
 				if (!i) i = 1;
-				pc_getzeny(sd, 1+rnd()%i, LOG_TYPE_PICKDROP_MONSTER);
+				pc_getzeny(sd, 1 + rnd() % i, LOG_TYPE_PICKDROP_MONSTER);
 			}
+
 		}
 
 		// Regular mob drops drop after script-granted drops
-		for( const std::shared_ptr<s_mob_drop>& entry : md->db->dropitem ){
-			if (entry->nameid == 0)
-				continue;
+		if (is_free_character) {
+			notify_free_character_block();
+		}
+		else {
 
-			std::shared_ptr<item_data> it = item_db.find(entry->nameid);
+			for (const std::shared_ptr<s_mob_drop>& entry : md->db->dropitem) {
+				if (entry->nameid == 0)
+					continue;
 
-			if (it == nullptr)
-				continue;
+				std::shared_ptr<item_data> it = item_db.find(entry->nameid);
 
-			//drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md);
-			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
+				if (it == nullptr)
+					continue;
 
-			// pp autoattack
-			// 1. คำนวณเรทดรอปปกติ
-			drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
+				//drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md);
 
-			// 2. กำหนดตัวละครที่จะเช็ค
-			map_session_data* target_sd = mvp_sd ? mvp_sd : (sd ? sd : first_sd);
+				// pp autoattack
+				// 1. คำนวณเรทดรอปปกติ
+				drop_rate = mob_getdroprate(src, md->db, entry->rate, drop_modifier, md, entry->nameid);
 
-			// 3. เริ่มระบบลดเรท
-			if (battle_config.autoattack_reduce_droprate && target_sd && target_sd->sc.getSCE(SC_AUTOATTACK)) {
+				// 2. กำหนดตัวละครที่จะเช็ค
+				map_session_data* target_sd = mvp_sd ? mvp_sd : (sd ? sd : first_sd);
 
-				if (it->type == IT_HEALING && (battle_config.autoattack_reduce_mode & AA_HEALING))
-					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
-				else if (it->type == IT_USABLE && (battle_config.autoattack_reduce_mode & AA_USABLE))
-					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
-				else if ((it->type == IT_ETC || it->type == IT_AMMO) && (battle_config.autoattack_reduce_mode & AA_ETC))
-					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
-				else if (it->type == IT_ARMOR && (battle_config.autoattack_reduce_mode & AA_ARMOR))
-					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
-				else if (it->type == IT_WEAPON && (battle_config.autoattack_reduce_mode & AA_WEAPON))
-					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
-				else if (it->type == IT_CARD && (battle_config.autoattack_reduce_mode & AA_CARD))
-					drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
-			}
-			// pp autoattack
+				// 3. เริ่มระบบลดเรท
+				if (battle_config.autoattack_reduce_droprate && target_sd && target_sd->sc.getSCE(SC_AUTOATTACK)) {
 
-			// attempt to drop the item
-			if (rnd() % 10000 >= drop_rate)
-				continue;
+					if (it->type == IT_HEALING && (battle_config.autoattack_reduce_mode & AA_HEALING))
+						drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+					else if (it->type == IT_USABLE && (battle_config.autoattack_reduce_mode & AA_USABLE))
+						drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+					else if ((it->type == IT_ETC || it->type == IT_AMMO) && (battle_config.autoattack_reduce_mode & AA_ETC))
+						drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+					else if (it->type == IT_ARMOR && (battle_config.autoattack_reduce_mode & AA_ARMOR))
+						drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+					else if (it->type == IT_WEAPON && (battle_config.autoattack_reduce_mode & AA_WEAPON))
+						drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+					else if (it->type == IT_CARD && (battle_config.autoattack_reduce_mode & AA_CARD))
+						drop_rate = drop_rate * (100 - battle_config.autoattack_reduce_droprate) / 100;
+				}
+				// pp autoattack
 
-			if (first_sd != nullptr && it->type == IT_PETEGG) {
-				pet_create_egg(first_sd, entry->nameid);
-				continue;
-			}
+				// attempt to drop the item
+				if (rnd() % 10000 >= drop_rate)
+					continue;
 
-			if(it->type == IT_CARD && util::vector_exists(mobs_no_card, md->mob_id))
-				continue;
-
-			std::shared_ptr<s_item_drop> ditem = mob_setdropitem(entry, 1, md->mob_id);
-
-			//A Rare Drop Global Announce by Lupus
-			if (first_sd != nullptr && entry->rate <= battle_config.rare_drop_announce) {
-				char message[128];
-				sprintf(message, msg_txt(nullptr, 541), first_sd->status.name, md->name, it->ename.c_str(), (float)drop_rate / 100);
-				//MSG: "'%s' won %s's %s (chance: %0.02f%%)"
-				intif_broadcast(message, strlen(message) + 1, BC_DEFAULT);
-			}
-			// Announce first, or else ditem will be freed. [Lance]
-			// By popular demand, use base drop rate for autoloot code. [Skotlex]
-			mob_item_drop(md, dlist, ditem, 0, battle_config.autoloot_adjust ? drop_rate : entry->rate, homkillonly || merckillonly);
-
-			// MvP and Mini-Boss Card Ad and Log System [Bad]
-			if (mvp_sd && battle_config.announcement_and_log_system) {
-
-				if (it->type == IT_CARD && md->get_bosstype() == BOSSTYPE_MVP && battle_config.mvp_card_announce_system) {
-					
-					if (battle_config.mvp_card_announce) {
-						char message[128];
-						sprintf (message, msg_txt(sd, 2500), mvp_sd->status.name, md->name, mapindex_id2name(mvp_sd->mapindex), it->ename.c_str(), (float)drop_rate/100);
-						intif_broadcast2(message, strlen(message) + 1, battle_config.set_drop_announce_color, 0x190, 12, 0, 0);
-					}
-
-					if (battle_config.dropped_mvp_card_log) {
-						if ( SQL_ERROR == Sql_Query(mmysql_handle, "INSERT INTO dropped_mvp_card_log (account_id, char_name, mvp_id, mvp_name, card_id, card_name, drop_map) VALUES ('%d', '%s', '%d', '%s', '%d', '%s', '%s')", mvp_sd->status.account_id, mvp_sd->status.name, md->mob_id, md->db->sprite.c_str(), it->nameid, it->name.c_str(),  mapindex_id2name(mvp_sd->mapindex))) // RMT Log System [Bad]
-						Sql_ShowDebug(mmysql_handle);
-					}
+				if (first_sd != nullptr && it->type == IT_PETEGG) {
+					pet_create_egg(first_sd, entry->nameid);
+					continue;
 				}
 
-				if (it->type == IT_CARD && md->get_bosstype() == BOSSTYPE_MINIBOSS && battle_config.mini_boss_card_announce_system) {
-					
-					if (battle_config.mini_boss_card_announce) {
-						char message[128];
-						sprintf (message, msg_txt(sd, 2500), mvp_sd->status.name, md->name, mapindex_id2name(mvp_sd->mapindex), it->ename.c_str(), (float)drop_rate/100);
-						intif_broadcast2(message, strlen(message) + 1, battle_config.set_drop_card_announce_color, 0x190, 12, 0, 0);
+				if (it->type == IT_CARD && util::vector_exists(mobs_no_card, md->mob_id))
+					continue;
+
+				std::shared_ptr<s_item_drop> ditem = mob_setdropitem(entry, 1, md->mob_id);
+
+				//A Rare Drop Global Announce by Lupus
+				if (first_sd != nullptr && entry->rate <= battle_config.rare_drop_announce) {
+					char message[128];
+					sprintf(message, msg_txt(nullptr, 541), first_sd->status.name, md->name, it->ename.c_str(), (float)drop_rate / 100);
+					//MSG: "'%s' won %s's %s (chance: %0.02f%%)"
+					intif_broadcast(message, strlen(message) + 1, BC_DEFAULT);
+				}
+				// Announce first, or else ditem will be freed. [Lance]
+				// By popular demand, use base drop rate for autoloot code. [Skotlex]
+				mob_item_drop(md, dlist, ditem, 0, battle_config.autoloot_adjust ? drop_rate : entry->rate, homkillonly || merckillonly);
+
+				// MvP and Mini-Boss Card Ad and Log System [Bad]
+				if (mvp_sd && battle_config.announcement_and_log_system) {
+
+					if (it->type == IT_CARD && md->get_bosstype() == BOSSTYPE_MVP && battle_config.mvp_card_announce_system) {
+
+						if (battle_config.mvp_card_announce) {
+							char message[128];
+							sprintf(message, msg_txt(sd, 2500), mvp_sd->status.name, md->name, mapindex_id2name(mvp_sd->mapindex), it->ename.c_str(), (float)drop_rate / 100);
+							intif_broadcast2(message, strlen(message) + 1, battle_config.set_drop_announce_color, 0x190, 12, 0, 0);
+						}
+
+						if (battle_config.dropped_mvp_card_log) {
+							if (SQL_ERROR == Sql_Query(mmysql_handle, "INSERT INTO dropped_mvp_card_log (account_id, char_name, mvp_id, mvp_name, card_id, card_name, drop_map) VALUES ('%d', '%s', '%d', '%s', '%d', '%s', '%s')", mvp_sd->status.account_id, mvp_sd->status.name, md->mob_id, md->db->sprite.c_str(), it->nameid, it->name.c_str(), mapindex_id2name(mvp_sd->mapindex))) // RMT Log System [Bad]
+								Sql_ShowDebug(mmysql_handle);
+						}
 					}
-					
-					if (battle_config.dropped_mini_boss_card_log) {
-						if ( SQL_ERROR == Sql_Query(mmysql_handle, "INSERT INTO dropped_mini_boss_card_log (account_id, char_name, mini_boss_id, mini_boss_name, card_id, card_name, drop_map) VALUES ('%d', '%s', '%d', '%s', '%d', '%s', '%s')", mvp_sd->status.account_id, mvp_sd->status.name, md->mob_id, md->db->sprite.c_str(), it->nameid, it->name.c_str(),  mapindex_id2name(mvp_sd->mapindex))) // RMT Log System [Bad]
-						Sql_ShowDebug(mmysql_handle);
+
+					if (it->type == IT_CARD && md->get_bosstype() == BOSSTYPE_MINIBOSS && battle_config.mini_boss_card_announce_system) {
+
+						if (battle_config.mini_boss_card_announce) {
+							char message[128];
+							sprintf(message, msg_txt(sd, 2500), mvp_sd->status.name, md->name, mapindex_id2name(mvp_sd->mapindex), it->ename.c_str(), (float)drop_rate / 100);
+							intif_broadcast2(message, strlen(message) + 1, battle_config.set_drop_card_announce_color, 0x190, 12, 0, 0);
+						}
+
+						if (battle_config.dropped_mini_boss_card_log) {
+							if (SQL_ERROR == Sql_Query(mmysql_handle, "INSERT INTO dropped_mini_boss_card_log (account_id, char_name, mini_boss_id, mini_boss_name, card_id, card_name, drop_map) VALUES ('%d', '%s', '%d', '%s', '%d', '%s', '%s')", mvp_sd->status.account_id, mvp_sd->status.name, md->mob_id, md->db->sprite.c_str(), it->nameid, it->name.c_str(), mapindex_id2name(mvp_sd->mapindex))) // RMT Log System [Bad]
+								Sql_ShowDebug(mmysql_handle);
+						}
 					}
 				}
 			}
-
 		}
 
 		// Ore Discovery (triggers if owner has loot priority, does not require to be the killer)
@@ -3885,51 +3928,58 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 		std::shared_ptr<s_map_drops> mapdrops;
 
 		// If it is an instance map, we check for map specific drops of the original map
-		if( map[md->m].instance_id > 0 ){
-			mapdrops = map_drop_db.find( map[md->m].instance_src_map );
-		}else{
-			mapdrops = map_drop_db.find( md->m );
+		if (map[md->m].instance_id > 0) {
+			mapdrops = map_drop_db.find(map[md->m].instance_src_map);
+		}
+		else {
+			mapdrops = map_drop_db.find(md->m);
 		}
 
-		if( mapdrops != nullptr ){
-			// Process map wide drops
-			for( const auto& it : mapdrops->globals ){
-				uint32 final_rate;
+		if (mapdrops != nullptr) {
+			if (is_free_character) {
+				notify_free_character_block();
+			} else {
+				// Process map wide drops
+					for (const auto& it : mapdrops->globals) {
+						uint32 final_rate;
 
-				if ( battle_config.enable_bonus_map_drops ) {
-					//final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
-					final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, it.second->nameid, 10);
-				} else {
-					final_rate = it.second->rate;
-				}
+						if (battle_config.enable_bonus_map_drops) {
+							//final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
+							final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, it.second->nameid, 10);
+						}
+						else {
+							final_rate = it.second->rate;
+						}
 
-				if( rnd_chance( final_rate, 100000u ) ){
-					// 'Cheat' for autoloot command: rate is changed from n/100000 to n/10000
-					int32 map_drops_rate = max(1, (final_rate / 10));
-					std::shared_ptr<s_item_drop> ditem = mob_setdropitem( it.second, 1, md->mob_id );
-					mob_item_drop( md, dlist, ditem, 0, map_drops_rate, homkillonly || merckillonly );
-				}
-			}
-
-			// Process map drops for this specific mob
-			const auto& specific = mapdrops->specific.find( md->mob_id );
-
-			if( specific != mapdrops->specific.end() ){
-				for( const auto& it : specific->second ){
-					uint32 final_rate;
-
-					if ( battle_config.enable_bonus_map_drops ) {
-						//final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
-						final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, it.second->nameid, 10);
-					} else {
-						final_rate = it.second->rate;
+						if (rnd_chance(final_rate, 100000u)) {
+							// 'Cheat' for autoloot command: rate is changed from n/100000 to n/10000
+							int32 map_drops_rate = max(1, (final_rate / 10));
+							std::shared_ptr<s_item_drop> ditem = mob_setdropitem(it.second, 1, md->mob_id);
+							mob_item_drop(md, dlist, ditem, 0, map_drops_rate, homkillonly || merckillonly);
+						}
 					}
 
-					if( rnd_chance( final_rate, 100000u ) ){
-						// 'Cheat' for autoloot command: rate is changed from n/100000 to n/10000
-						int32 map_drops_rate = max(1, (final_rate / 10));
-						std::shared_ptr<s_item_drop> ditem = mob_setdropitem( it.second, 1, md->mob_id );
-						mob_item_drop( md, dlist, ditem, 0, map_drops_rate, homkillonly || merckillonly );
+				// Process map drops for this specific mob
+				const auto& specific = mapdrops->specific.find(md->mob_id);
+
+				if (specific != mapdrops->specific.end()) {
+					for (const auto& it : specific->second) {
+						uint32 final_rate;
+
+						if (battle_config.enable_bonus_map_drops) {
+							//final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, 10);
+							final_rate = mob_getdroprate(first_sd, md->db, it.second->rate, drop_modifier, md, it.second->nameid, 10);
+						}
+						else {
+							final_rate = it.second->rate;
+						}
+
+						if (rnd_chance(final_rate, 100000u)) {
+							// 'Cheat' for autoloot command: rate is changed from n/100000 to n/10000
+							int32 map_drops_rate = max(1, (final_rate / 10));
+							std::shared_ptr<s_item_drop> ditem = mob_setdropitem(it.second, 1, md->mob_id);
+							mob_item_drop(md, dlist, ditem, 0, map_drops_rate, homkillonly || merckillonly);
+						}
 					}
 				}
 			}
@@ -3949,7 +3999,10 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 	}
 
 	// MVP Reward
-	if( mvp_sd != nullptr ){
+	//if( mvp_sd != nullptr ){
+	if (mvp_sd != nullptr
+		&& pc_readaccountreg(mvp_sd, add_str("#FREE_CHARACTER")) <= 0) {
+
 		t_itemid log_mvp_nameid = 0;
 		t_exp log_mvp_exp = 0;
 
