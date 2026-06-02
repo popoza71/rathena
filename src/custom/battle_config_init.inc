@@ -158,3 +158,8 @@
 	{ "population_engine_vending_enable",&battle_config.population_engine_vending_enable,0,0,1,},
 	{ "population_engine_arena_custom_pool",&battle_config.population_engine_arena_custom_pool,0,0,1,},
 	{ "population_engine_path_attempts",&battle_config.population_engine_path_attempts,16,1,256,},
+
+	{ "feature.goldpc_active",              &battle_config.feature_goldpc_active,           1,      0,      1,              },
+	{ "feature.goldpc_time",                &battle_config.feature_goldpc_time,          3600,      1,  INT32_MAX,        },
+	{ "feature.goldpc_max_points",          &battle_config.feature_goldpc_max_points,     300,      0,  INT32_MAX,        },
+	{ "feature.goldpc_vip",                 &battle_config.feature_goldpc_vip,              1,      0,      1,              },

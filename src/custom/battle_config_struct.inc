@@ -199,3 +199,9 @@
 	/// global in population_engine.cpp. This field signals that a custom pool was configured (1=yes,0=no).
 	int32 population_engine_arena_custom_pool;
 	int32 population_engine_path_attempts;
+
+
+	int32 feature_goldpc_active;
+	int32 feature_goldpc_time;
+	int32 feature_goldpc_max_points;
+	int32 feature_goldpc_vip;

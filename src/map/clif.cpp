@@ -11336,6 +11336,9 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
 			channel_mjoin(sd); //join new map
 
 		clif_pk_mode_message(sd);
+
+		// Update Gold PC button/progress after loading map.
+		clif_goldpc_info(*sd);
 	}
 	
 	if( sd->guild && ( battle_config.guild_notice_changemap == 2 || guild_notice ) ){
@@ -25950,6 +25953,70 @@ void clif_macro_reporter_status(const map_session_data &sd, e_macro_report_statu
 	clif_send(&p, sizeof(p), &sd, SELF);
 #endif
 }
+
+void clif_goldpc_info( map_session_data& sd ){
+#if PACKETVER >= 20140611
+	const static int32 client_max_seconds = 3600;
+
+	if( battle_config.feature_goldpc_active ){
+		PACKET_ZC_GOLDPCCAFE_POINT p = {};
+
+		p.PacketType = HEADER_ZC_GOLDPCCAFE_POINT;
+		p.isActive = 1;
+		p.mode = ( battle_config.feature_goldpc_vip && pc_isvip( &sd ) ) ? 2 : 1;
+		p.point = static_cast<int32>( pc_readparam( &sd, SP_GOLDPC_POINTS ) );
+
+		if( sd.goldpc_tid != INVALID_TIMER ){
+			const TimerData* td = get_timer( sd.goldpc_tid );
+
+			if( td != nullptr ){
+				t_tick remaining = td->tick - gettick();
+				remaining += ( remaining % 1000 );
+				int32 elapsed = battle_config.feature_goldpc_time - static_cast<int32>( remaining / 1000 );
+				p.playedTime = client_max_seconds - battle_config.feature_goldpc_time + elapsed;
+				p.playedTime = cap_value( p.playedTime, 0, client_max_seconds );
+			}else{
+				p.playedTime = 0;
+			}
+		}else{
+			p.playedTime = client_max_seconds;
+		}
+
+		clif_send( &p, sizeof( p ), &sd, SELF );
+	}
+#endif
+}
+
+void clif_parse_dynamic_npc( int32 fd, map_session_data* sd ){
+#if PACKETVER >= 20140430
+	nullpo_retv( sd );
+
+	const PACKET_CZ_DYNAMICNPC_CREATE_REQUEST* p = reinterpret_cast<PACKET_CZ_DYNAMICNPC_CREATE_REQUEST*>( RFIFOP( fd, 0 ) );
+	char npcname[NPC_NAME_LENGTH + 1];
+
+	if( strncasecmp( "GOLDPCCAFE", p->name, sizeof( p->name ) ) == 0 ){
+		safestrncpy( npcname, p->name, sizeof( npcname ) );
+	}else{
+		clif_dynamicnpc_result( *sd, DYNAMICNPC_RESULT_UNKNOWNNPC );
+		return;
+	}
+
+	npc_data* nd = npc_name2id( npcname );
+
+	if( nd == nullptr ){
+		ShowError( "clif_parse_dynamic_npc: Original NPC \"%s\" was not found.\n", npcname );
+		clif_dynamicnpc_result( *sd, DYNAMICNPC_RESULT_UNKNOWNNPC );
+		return;
+	}
+
+	if( npc_duplicate_npc_for_player( *nd, *sd ) != nullptr ){
+		clif_dynamicnpc_result( *sd, DYNAMICNPC_RESULT_SUCCESS );
+	}else{
+		clif_dynamicnpc_result( *sd, DYNAMICNPC_RESULT_UNKNOWN );
+	}
+#endif
+}
+
 
 void clif_dynamicnpc_result( const map_session_data& sd, e_dynamicnpc_result result ){
 #if PACKETVER_MAIN_NUM >= 20140430 || PACKETVER_RE_NUM >= 20140430 || defined(PACKETVER_ZERO)

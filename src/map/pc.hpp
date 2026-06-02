@@ -65,6 +65,8 @@ class MapGuild;
 #define ATTENDANCE_DATE_VAR "#AttendanceDate"
 #define ATTENDANCE_COUNT_VAR "#AttendanceCounter"
 #define ACHIEVEMENTLEVEL "AchievementLevel"
+#define GOLDPC_POINT_VAR "Goldpc_Points"
+#define GOLDPC_SECONDS_VAR "Goldpc_Seconds"
 
 //Total number of classes (for data storage)
 #define CLASS_COUNT (JOB_MAX - JOB_NOVICE_HIGH + JOB_MAX_BASIC)
@@ -1193,6 +1195,8 @@ public:
 
 	s_macro_detect macro_detect;
 
+	int32 goldpc_tid = INVALID_TIMER;
+
 	std::vector<uint32> party_booking_requests;
 
 	std::vector<t_itemid> collection_list;
@@ -2057,6 +2061,7 @@ void pc_macro_captcha_register_upload(map_session_data & sd, uint16 upload_size,
 
 // Macro Detector
 TIMER_FUNC(pc_macro_detector_timeout);
+TIMER_FUNC(pc_goldpc_update);
 void pc_macro_detector_process_answer(map_session_data &sd, const char captcha_answer[CAPTCHA_ANSWER_SIZE_MAX]);
 void pc_macro_detector_disconnect(map_session_data &sd);
 
