@@ -3594,6 +3594,11 @@
 	export_constant(EFST_GUILD_BUFF_3_3);
 	export_constant(EFST_GUILD_BUFF_3_4);
 	export_constant(EFST_GUILD_BUFF_3_5);
+	//Premium Service Buff custom
+	export_constant(EFST_PREMIUM_BUFF_1);
+	export_constant(EFST_PREMIUM_BUFF_2);
+	export_constant(EFST_PREMIUM_BUFF_3);
+
 
 	export_constant(EFST_BARTER_CRAFT_BONUS);
 
@@ -10390,6 +10395,11 @@
 	export_constant(FOOTPRINT_EF_FLOWER_GARDEN);
 	export_constant(HAT_EF_C_ANGEL_GIFT);
 
+	export_constant(HAT_EF_RONIN_10K);
+	export_constant(HAT_EF_RONIN_20K);
+	export_constant(HAT_EF_RONIN_30K);
+
+
 	/* pet catch */
 	export_constant(PET_CATCH_UNIVERSAL_NO_BOSS);
 	export_constant(PET_CATCH_UNIVERSAL_ALL);
@@ -11313,6 +11323,17 @@
 	/* vip state */
 	export_constant(SC_VIPSTATE);
 
+	//puppy PREMIUM SERVICE
+	export_constant(SC_AID_PERIOD_PLUSEXP_2ND);
+	export_constant(SC_AID_PERIOD_PLUSEXP);
+	export_constant(SC_AID_PERIOD_PLUSJOBEXP_2ND);
+	export_constant(SC_AID_PERIOD_PLUSJOBEXP);
+	export_constant(SC_AID_PERIOD_RECEIVEITEM_2ND);
+	export_constant(SC_AID_PERIOD_RECEIVEITEM);
+	export_constant(SC_AID_PERIOD_ADDSTOREITEMCOUNT);
+	export_constant(SC_AID_PERIOD_DEADPENALTY);
+
+	//gum spilt
 	export_constant(SC_GUM_ETC);
 	export_constant(SC_GUM_EQUIP);
 	export_constant(SC_GUM_CARD);
@@ -11380,6 +11401,10 @@
 	export_constant(SC_GUILD_BUFF_3_3);
 	export_constant(SC_GUILD_BUFF_3_4);
 	export_constant(SC_GUILD_BUFF_3_5);
+	//Premium Service Buff custom
+	export_constant(SC_PREMIUM_BUFF_1);
+	export_constant(SC_PREMIUM_BUFF_2);
+	export_constant(SC_PREMIUM_BUFF_3);
 
 	export_constant(SC_BARTER_CRAFT_BONUS);
 

@@ -3148,6 +3148,14 @@ int32 mob_getdroprate(block_list* src, std::shared_ptr<s_mob_db> mob, int32 base
 					drop_rate_bonus += sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND)->val1;
 			}
 
+			// PUPPY PREMIUM SERVICE
+			if (sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM_2ND) && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				drop_rate_bonus += sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM_2ND)->val1;
+			}
+			if (sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM) && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				drop_rate_bonus += sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM)->val1;
+			}
+
 			// gum split (only if item exists)
 			if (id && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
 				// Gum split: apply drop bonus by item type
@@ -3270,6 +3278,13 @@ DropRateResult mob_getdroprate_extended(block_list* src, std::shared_ptr<s_mob_d
 					drop_rate_bonus += sd->sc.getSCE(SC_ITEMBOOST)->val1;
 				if (sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND))
 					drop_rate_bonus += sd->sc.getSCE(SC_PERIOD_RECEIVEITEM_2ND)->val1;
+			}
+
+			if (sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM_2ND) && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				drop_rate_bonus += sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM_2ND)->val1;
+			}
+			if (sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM) && (battle_config.sc_buff_effect_boss || mob->status.class_ != CLASS_BOSS)) {
+				drop_rate_bonus += sd->sc.getSCE(SC_AID_PERIOD_RECEIVEITEM)->val1;
 			}
 
 			// gum split (only if item exists)
