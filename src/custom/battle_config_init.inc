@@ -163,3 +163,37 @@
 	{ "feature.goldpc_time",                &battle_config.feature_goldpc_time,          3600,      1,  INT32_MAX,        },
 	{ "feature.goldpc_max_points",          &battle_config.feature_goldpc_max_points,     300,      0,  INT32_MAX,        },
 	{ "feature.goldpc_vip",                 &battle_config.feature_goldpc_vip,              1,      0,      1,              },
+
+	// Gold PC online EXP/JOB reward. 0 disables each option.
+	{ "feature.goldpc_min_level",           &battle_config.feature_goldpc_min_level,         0,      0,    255,             },
+	{ "feature.goldpc_block_vending",       &battle_config.feature_goldpc_block_vending,     1,      0,      1,             },
+	{ "feature.goldpc_city_only",           &battle_config.feature_goldpc_city_only,         0,      0,      1,             },
+
+	{ "feature.goldpc_exp_61_80_min",       &battle_config.feature_goldpc_exp_61_80_min,  50000,      0,  INT32_MAX,        },
+	{ "feature.goldpc_exp_61_80_max",       &battle_config.feature_goldpc_exp_61_80_max, 150000,      0,  INT32_MAX,        },
+	{ "feature.goldpc_job_61_80_min",       &battle_config.feature_goldpc_job_61_80_min,  25000,      0,  INT32_MAX,        },
+	{ "feature.goldpc_job_61_80_max",       &battle_config.feature_goldpc_job_61_80_max, 100000,      0,  INT32_MAX,        },
+
+	{ "feature.goldpc_exp_81_98_min",       &battle_config.feature_goldpc_exp_81_98_min, 100000,      0,  INT32_MAX,        },
+	{ "feature.goldpc_exp_81_98_max",       &battle_config.feature_goldpc_exp_81_98_max, 350000,      0,  INT32_MAX,        },
+	{ "feature.goldpc_job_81_98_min",       &battle_config.feature_goldpc_job_81_98_min,  50000,      0,  INT32_MAX,        },
+	{ "feature.goldpc_job_81_98_max",       &battle_config.feature_goldpc_job_81_98_max, 250000,      0,  INT32_MAX,        },
+
+	// Gold PC town whitelist. Used only when feature.goldpc_city_only is 1.
+	{ "feature.goldpc_city_prontera",       &battle_config.feature_goldpc_city_prontera,     1,      0,      1,             },
+	{ "feature.goldpc_city_izlude",         &battle_config.feature_goldpc_city_izlude,       1,      0,      1,             },
+	{ "feature.goldpc_city_geffen",         &battle_config.feature_goldpc_city_geffen,       1,      0,      1,             },
+	{ "feature.goldpc_city_payon",          &battle_config.feature_goldpc_city_payon,        1,      0,      1,             },
+	{ "feature.goldpc_city_morocc",         &battle_config.feature_goldpc_city_morocc,       1,      0,      1,             },
+	{ "feature.goldpc_city_alberta",        &battle_config.feature_goldpc_city_alberta,      1,      0,      1,             },
+	{ "feature.goldpc_city_aldebaran",      &battle_config.feature_goldpc_city_aldebaran,    1,      0,      1,             },
+	{ "feature.goldpc_city_comodo",         &battle_config.feature_goldpc_city_comodo,       1,      0,      1,             },
+	{ "feature.goldpc_city_yuno",           &battle_config.feature_goldpc_city_yuno,         1,      0,      1,             },
+	{ "feature.goldpc_city_lighthalzen",    &battle_config.feature_goldpc_city_lighthalzen,  1,      0,      1,             },
+	{ "feature.goldpc_city_hugel",          &battle_config.feature_goldpc_city_hugel,        1,      0,      1,             },
+	{ "feature.goldpc_city_rachel",         &battle_config.feature_goldpc_city_rachel,       1,      0,      1,             },
+	{ "feature.goldpc_city_veins",          &battle_config.feature_goldpc_city_veins,        1,      0,      1,             },
+	{ "feature.goldpc_city_amatsu",         &battle_config.feature_goldpc_city_amatsu,       1,      0,      1,             },
+	{ "feature.goldpc_city_gonryun",        &battle_config.feature_goldpc_city_gonryun,      1,      0,      1,             },
+	{ "feature.goldpc_city_louyang",        &battle_config.feature_goldpc_city_louyang,      1,      0,      1,             },
+	{ "feature.goldpc_city_ayothaya",       &battle_config.feature_goldpc_city_ayothaya,     1,      0,      1,             },

@@ -3738,7 +3738,7 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 		// Resolve the session that would receive drops/rewards for this kill.
 		map_session_data* target_sd = mvp_sd ? mvp_sd : (sd ? sd : first_sd);
 		bool is_free_character = (target_sd != nullptr
-			&& pc_readaccountreg(target_sd, add_str("#FREE_CHARACTER")) > 0);
+			&& pc_readaccountreg(target_sd, add_str("FREE_CHARACTER")) > 0);
 		bool free_character_msg = false;
 
 		// One overhead message per monster kill, even if multiple reward paths are blocked.
@@ -4016,7 +4016,7 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 	// MVP Reward
 	//if( mvp_sd != nullptr ){
 	if (mvp_sd != nullptr
-		&& pc_readaccountreg(mvp_sd, add_str("#FREE_CHARACTER")) <= 0) {
+		&& pc_readaccountreg(mvp_sd, add_str("FREE_CHARACTER")) <= 0) {
 
 		t_itemid log_mvp_nameid = 0;
 		t_exp log_mvp_exp = 0;

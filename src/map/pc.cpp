@@ -3634,6 +3634,182 @@ void load_char_bonus_data(map_session_data& sd)
  * See intif_parse_StorageReceived() for item operations [lighta]
  *------------------------------------------*/
 
+static bool pc_goldpc_same_map(map_session_data* sd, const char* mapname)
+{
+	const char* current_mapname;
+
+	if (sd == nullptr || mapname == nullptr)
+		return false;
+
+	current_mapname = map_mapid2mapname(sd->m);
+
+	if (current_mapname == nullptr)
+		return false;
+
+	return strcmp(current_mapname, mapname) == 0;
+}
+
+static bool pc_goldpc_city_allowed(map_session_data* sd)
+{
+	if (!battle_config.feature_goldpc_city_only)
+		return true;
+
+	if (battle_config.feature_goldpc_city_prontera && pc_goldpc_same_map(sd, "prontera"))
+		return true;
+	if (battle_config.feature_goldpc_city_izlude && pc_goldpc_same_map(sd, "izlude"))
+		return true;
+	if (battle_config.feature_goldpc_city_geffen && pc_goldpc_same_map(sd, "geffen"))
+		return true;
+	if (battle_config.feature_goldpc_city_payon && pc_goldpc_same_map(sd, "payon"))
+		return true;
+	if (battle_config.feature_goldpc_city_morocc && pc_goldpc_same_map(sd, "morocc"))
+		return true;
+	if (battle_config.feature_goldpc_city_alberta && pc_goldpc_same_map(sd, "alberta"))
+		return true;
+	if (battle_config.feature_goldpc_city_aldebaran && pc_goldpc_same_map(sd, "aldebaran"))
+		return true;
+	if (battle_config.feature_goldpc_city_comodo && pc_goldpc_same_map(sd, "comodo"))
+		return true;
+	if (battle_config.feature_goldpc_city_yuno && pc_goldpc_same_map(sd, "yuno"))
+		return true;
+	if (battle_config.feature_goldpc_city_lighthalzen && pc_goldpc_same_map(sd, "lighthalzen"))
+		return true;
+	if (battle_config.feature_goldpc_city_hugel && pc_goldpc_same_map(sd, "hugel"))
+		return true;
+	if (battle_config.feature_goldpc_city_rachel && pc_goldpc_same_map(sd, "rachel"))
+		return true;
+	if (battle_config.feature_goldpc_city_veins && pc_goldpc_same_map(sd, "veins"))
+		return true;
+	if (battle_config.feature_goldpc_city_amatsu && pc_goldpc_same_map(sd, "amatsu"))
+		return true;
+	if (battle_config.feature_goldpc_city_gonryun && pc_goldpc_same_map(sd, "gonryun"))
+		return true;
+	if (battle_config.feature_goldpc_city_louyang && pc_goldpc_same_map(sd, "louyang"))
+		return true;
+	if (battle_config.feature_goldpc_city_ayothaya && pc_goldpc_same_map(sd, "ayothaya"))
+		return true;
+
+	return false;
+}
+
+static bool pc_goldpc_can_receive_reward(map_session_data* sd)
+{
+	if (sd == nullptr)
+		return false;
+
+	if (!battle_config.feature_goldpc_active)
+		return false;
+
+	if (sd->state.autotrade)
+		return false;
+
+	if (battle_config.feature_goldpc_min_level > 0 && sd->status.base_level < battle_config.feature_goldpc_min_level)
+		return false;
+
+	if (pc_readglobalreg(sd, add_str("FREE_CHARACTER")) > 0)
+		return false;
+
+	if (battle_config.feature_goldpc_block_vending && (sd->state.vending || sd->state.buyingstore))
+		return false;
+
+	if (!pc_goldpc_city_allowed(sd))
+		return false;
+
+	return true;
+}
+
+static void pc_goldpc_show_fail_message(map_session_data* sd)
+{
+	char output[180];
+
+	if (sd == nullptr)
+		return;
+
+	if (!battle_config.feature_goldpc_active) {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2541));
+	} else if (sd->state.autotrade) {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2542));
+	} else if (battle_config.feature_goldpc_min_level > 0 && sd->status.base_level < battle_config.feature_goldpc_min_level) {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2543), battle_config.feature_goldpc_min_level);
+	} else if (pc_readglobalreg(sd, add_str("FREE_CHARACTER")) > 0) {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2547));
+	} else if (battle_config.feature_goldpc_block_vending && (sd->state.vending || sd->state.buyingstore)) {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2544));
+	} else if (!pc_goldpc_city_allowed(sd)) {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2545));
+	} else {
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2546));
+	}
+
+	clif_messagecolor(sd, color_table[COLOR_RED], output, false, SELF);
+}
+
+static int32 pc_goldpc_random_range(int32 min_value, int32 max_value)
+{
+	int32 tmp;
+
+	if (min_value <= 0 || max_value <= 0)
+		return 0;
+
+	if (max_value < min_value) {
+		tmp = min_value;
+		min_value = max_value;
+		max_value = tmp;
+	}
+
+	return min_value + rnd() % (max_value - min_value + 1);
+}
+
+static void pc_goldpc_give_online_exp(map_session_data* sd, int32* base_exp_out, int32* job_exp_out)
+{
+	int32 base_exp = 0;
+	int32 job_exp = 0;
+
+	if (base_exp_out != nullptr)
+		*base_exp_out = 0;
+
+	if (job_exp_out != nullptr)
+		*job_exp_out = 0;
+
+	if (sd == nullptr)
+		return;
+
+	if (sd->status.base_level >= (battle_config.feature_goldpc_min_level > 0 ? battle_config.feature_goldpc_min_level : 61) && sd->status.base_level <= 80) {
+		base_exp = pc_goldpc_random_range(battle_config.feature_goldpc_exp_61_80_min, battle_config.feature_goldpc_exp_61_80_max);
+		job_exp = pc_goldpc_random_range(battle_config.feature_goldpc_job_61_80_min, battle_config.feature_goldpc_job_61_80_max);
+	} else if (sd->status.base_level >= 81 && sd->status.base_level <= 98) {
+		base_exp = pc_goldpc_random_range(battle_config.feature_goldpc_exp_81_98_min, battle_config.feature_goldpc_exp_81_98_max);
+		job_exp = pc_goldpc_random_range(battle_config.feature_goldpc_job_81_98_min, battle_config.feature_goldpc_job_81_98_max);
+	} else {
+		return;
+	}
+
+	if (base_exp <= 0 && job_exp <= 0)
+		return;
+
+	pc_gainexp(sd, nullptr, base_exp, job_exp, 0);
+
+	if (base_exp_out != nullptr)
+		*base_exp_out = base_exp;
+
+	if (job_exp_out != nullptr)
+		*job_exp_out = job_exp;
+}
+
+static void pc_goldpc_restart_timer(map_session_data* sd)
+{
+	if (sd == nullptr)
+		return;
+
+	pc_setreg2(sd, GOLDPC_SECONDS_VAR, 0);
+
+	if (battle_config.feature_goldpc_active && pc_readparam(sd, SP_GOLDPC_POINTS) < battle_config.feature_goldpc_max_points && !sd->state.autotrade)
+		sd->goldpc_tid = add_timer(gettick() + battle_config.feature_goldpc_time * 1000, pc_goldpc_update, sd->id, 0);
+
+	clif_goldpc_info(*sd);
+}
+
+
 TIMER_FUNC(pc_goldpc_update){
 	map_session_data* sd = map_id2sd(id);
 
@@ -3642,18 +3818,43 @@ TIMER_FUNC(pc_goldpc_update){
 
 	sd->goldpc_tid = INVALID_TIMER;
 
-	if( !battle_config.feature_goldpc_active || sd->state.autotrade )
+	if (!battle_config.feature_goldpc_active || sd->state.autotrade) {
+		pc_goldpc_show_fail_message(sd);
 		return 0;
+	}
 
 	int64 points = pc_readparam(sd, SP_GOLDPC_POINTS);
 
-	if( battle_config.feature_goldpc_vip && pc_isvip(sd) )
-		points += 2;
-	else
-		points += 1;
+	if (points >= battle_config.feature_goldpc_max_points) {
+		clif_goldpc_info(*sd);
+		return 0;
+	}
 
-	pc_setreg2(sd, GOLDPC_SECONDS_VAR, 0);
-	pc_setparam(sd, SP_GOLDPC_POINTS, points);
+	if (pc_goldpc_can_receive_reward(sd)) {
+		int32 point_gain = 1;
+		int32 base_exp = 0;
+		int32 job_exp = 0;
+		char output[160];
+
+		if( battle_config.feature_goldpc_vip && pc_isvip(sd) )
+			point_gain = 2;
+
+		points += point_gain;
+
+		points = cap_value(points, 0, battle_config.feature_goldpc_max_points);
+
+		pc_goldpc_give_online_exp(sd, &base_exp, &job_exp);
+
+		safesnprintf(output, sizeof(output), msg_txt(sd, 2540), point_gain, base_exp, job_exp);
+		clif_messagecolor(sd, color_table[COLOR_LIGHT_GREEN], output, false, SELF);
+
+		pc_setreg2(sd, GOLDPC_SECONDS_VAR, 0);
+		pc_setparam(sd, SP_GOLDPC_POINTS, points);
+	} else {
+		// Not eligible at this round: no point and no EXP/JOB, then start next round.
+		pc_goldpc_show_fail_message(sd);
+		pc_goldpc_restart_timer(sd);
+	}
 
 	return 0;
 }

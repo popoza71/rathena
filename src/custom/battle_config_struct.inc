@@ -205,3 +205,37 @@
 	int32 feature_goldpc_time;
 	int32 feature_goldpc_max_points;
 	int32 feature_goldpc_vip;
+
+	// Gold PC online reward EXP/JOB
+	int32 feature_goldpc_min_level;
+	int32 feature_goldpc_block_vending;
+	int32 feature_goldpc_city_only;
+
+	int32 feature_goldpc_exp_61_80_min;
+	int32 feature_goldpc_exp_61_80_max;
+	int32 feature_goldpc_job_61_80_min;
+	int32 feature_goldpc_job_61_80_max;
+
+	int32 feature_goldpc_exp_81_98_min;
+	int32 feature_goldpc_exp_81_98_max;
+	int32 feature_goldpc_job_81_98_min;
+	int32 feature_goldpc_job_81_98_max;
+
+	// Gold PC allowed town maps. Used only when feature_goldpc_city_only is enabled.
+	int32 feature_goldpc_city_prontera;
+	int32 feature_goldpc_city_izlude;
+	int32 feature_goldpc_city_geffen;
+	int32 feature_goldpc_city_payon;
+	int32 feature_goldpc_city_morocc;
+	int32 feature_goldpc_city_alberta;
+	int32 feature_goldpc_city_aldebaran;
+	int32 feature_goldpc_city_comodo;
+	int32 feature_goldpc_city_yuno;
+	int32 feature_goldpc_city_lighthalzen;
+	int32 feature_goldpc_city_hugel;
+	int32 feature_goldpc_city_rachel;
+	int32 feature_goldpc_city_veins;
+	int32 feature_goldpc_city_amatsu;
+	int32 feature_goldpc_city_gonryun;
+	int32 feature_goldpc_city_louyang;
+	int32 feature_goldpc_city_ayothaya;
