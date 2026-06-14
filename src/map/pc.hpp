@@ -572,10 +572,16 @@ struct s_autosupport {
 	t_tick item_cd = 0;
 	t_tick last_follow_move = 0;
 	t_tick last_follow_jump = 0;
+	t_tick last_follow_stuck_start = 0;
 	t_tick last_dead_action = 0;
 
 	int16 last_follow_x = 0;
 	int16 last_follow_y = 0;
+	int16 last_follow_dist = 0;
+
+	int16 last_follow_target_x = 0;
+	int16 last_follow_target_y = 0;
+	int16 last_follow_target_m = -1;
 
 	bool follow_enabled = false;
 	int32 follow_target_char_id = 0;

@@ -119,6 +119,12 @@
 	int32 autoattack_coinflip_coin;
 	int32 autoattack_chaincombo_finnish;
 
+	int32 autosupport_follow_jump_sp_cost;
+	int32 autosupport_follow_jump_min_distance;
+	int32 autosupport_follow_jump_cooldown;
+	int32 autosupport_follow_stuck_time;
+	int32 autosupport_follow_stuck_min_distance;
+	int32 autosupport_follow_cancel_cast_on_wing;
 	
 	int32 population_engine_max_count;
 	/// 0 = warn and fix invalid YAML rows; 1 = discard entire equipment DB if any validation error

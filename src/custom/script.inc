@@ -2351,3 +2351,6 @@ BUILDIN_FUNC(population_arena_jobs)
 	script_pushstrcopy(st, csv.c_str());
 	return SCRIPT_CMD_SUCCESS;
 }
+
+
+

@@ -118,6 +118,12 @@
 	{ "autoattack_coinflip_coin",			&battle_config.autoattack_coinflip_coin,		0,		0,		INT_MAX,		},
 	{ "autoattack_chaincombo_finnish",		&battle_config.autoattack_chaincombo_finnish,	1,		0,		1,				},
 
+	{ "autosupport_follow_jump_sp_cost",		&battle_config.autosupport_follow_jump_sp_cost, 15, 0, 1000 },
+	{ "autosupport_follow_jump_min_distance",	&battle_config.autosupport_follow_jump_min_distance, 14, 1, 100 },
+	{ "autosupport_follow_jump_cooldown",		&battle_config.autosupport_follow_jump_cooldown, 3000, 0, 60000 },
+	{ "autosupport_follow_stuck_time",			&battle_config.autosupport_follow_stuck_time, 2500, 0, 60000 },
+	{ "autosupport_follow_stuck_min_distance",	&battle_config.autosupport_follow_stuck_min_distance, 10, 1, 100 },
+	{ "autosupport_follow_cancel_cast_on_wing", &battle_config.autosupport_follow_cancel_cast_on_wing, 1, 0, 1 },
 	
 	{ "population_engine_max_count",&battle_config.population_engine_max_count,1000,1,30000,},
 	{ "population_engine_equipment_strict_load",&battle_config.population_engine_equipment_strict_load,0,0,1,},

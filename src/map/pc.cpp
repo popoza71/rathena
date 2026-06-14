@@ -65,6 +65,7 @@
 #include "storage.hpp"
 #include "unit.hpp" // unit_stop_attack(), unit_stop_walking()
 #include "vending.hpp" // struct s_vending
+#include "voice_bridge.hpp"
 
 using namespace rathena;
 
@@ -2573,6 +2574,7 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
 
 	// Request all registries (auth is considered completed whence they arrive)
 	intif_request_registry(sd,7);
+	voice_bridge_send_map_pos(sd);
 	return true;
 }
 
@@ -2777,9 +2779,9 @@ void pc_aa_load(map_session_data* sd)
 
 static const t_tick AS_INTERVAL = 300;
 static const t_tick AS_MIN_GLOBAL_SKILL_DELAY = 500;
-static const t_tick AS_FOLLOW_STUCK_TIME = 3000;
-static const t_tick AS_FOLLOW_JUMP_COOLDOWN = 1200;
-static const int AS_FOLLOW_JUMP_TRIGGER_DISTANCE = 12;
+//static const t_tick AS_FOLLOW_STUCK_TIME = 3000;
+//static const t_tick AS_FOLLOW_JUMP_COOLDOWN = 1200;
+//static const int AS_FOLLOW_JUMP_TRIGGER_DISTANCE = 12;
 
 static int as_percent(int cur, int max)
 {
@@ -3200,6 +3202,21 @@ static bool as_try_resurrection(map_session_data* sd)
 	return false;
 }
 
+static void as_cancel_current_action(map_session_data* sd)
+{
+	if (!sd)
+		return;
+
+	if (sd->ud.skilltimer != INVALID_TIMER)
+		unit_skillcastcancel(sd, 0);
+
+	unit_stop_walking(sd, 1);
+	unit_stop_attack(sd);
+
+	sd->ud.target = 0;
+	sd->ud.skilltarget = 0;
+}
+
 static bool as_try_follow(map_session_data* sd)
 {
 	if (!sd || !sd->as.follow_enabled || sd->as.follow_target_char_id <= 0)
@@ -3210,45 +3227,134 @@ static bool as_try_follow(map_session_data* sd)
 	if (!target || target == sd)
 		return false;
 
+	// ถ้าอยู่คนละแมพ ยังไม่ให้ตามข้ามแมพ
 	if (target->m != sd->m)
 		return false;
 
+	t_tick now = gettick();
 	int dist = distance_bl(sd, target);
 
+	// ตรวจว่าตัวหลักมีการวิง / เปลี่ยนตำแหน่งไกลหรือไม่
+	bool target_warped = false;
+
+	if (sd->as.last_follow_target_m == target->m &&
+		sd->as.last_follow_target_x > 0 &&
+		sd->as.last_follow_target_y > 0) {
+
+		int target_move_dist = distance_xy(
+			sd->as.last_follow_target_x,
+			sd->as.last_follow_target_y,
+			target->x,
+			target->y
+		);
+
+		// ถ้าตัวหลักย้ายตำแหน่งไกลมากในรอบเดียว ให้ถือว่า Wing / Teleport
+		if (target_move_dist >= battle_config.autosupport_follow_jump_min_distance) {
+			target_warped = true;
+
+			if (battle_config.autosupport_follow_cancel_cast_on_wing)
+				as_cancel_current_action(sd);
+		}
+	}
+
+	// บันทึกตำแหน่งตัวหลักไว้เทียบครั้งถัดไป
+	sd->as.last_follow_target_m = target->m;
+	sd->as.last_follow_target_x = target->x;
+	sd->as.last_follow_target_y = target->y;
+
+	// อยู่ในระยะที่ตั้งไว้แล้ว ไม่ต้องทำอะไร
 	if (dist <= sd->as.follow_distance) {
 		sd->as.last_follow_x = sd->x;
 		sd->as.last_follow_y = sd->y;
+		sd->as.last_follow_dist = dist;
+		sd->as.last_follow_move = now;
+		sd->as.last_follow_stuck_start = 0;
 		return false;
 	}
-
-	t_tick now = gettick();
 
 	if (pc_issit(sd))
 		pc_setstand(sd, false);
 
-	unit_walktobl(sd, target, sd->as.follow_distance, 1);
+	bool moved = !(sd->x == sd->as.last_follow_x && sd->y == sd->as.last_follow_y);
 
-	bool stuck =
-		sd->x == sd->as.last_follow_x &&
-		sd->y == sd->as.last_follow_y &&
-		DIFF_TICK(now, sd->as.last_follow_move) >= AS_FOLLOW_STUCK_TIME;
+	bool dist_improving = false;
 
-	sd->as.last_follow_move = now;
+	if (sd->as.last_follow_dist > 0 && dist < sd->as.last_follow_dist)
+		dist_improving = true;
+
+	// ถ้าตัวหลักไม่ได้วิง และตัวซัพยังเดินตามได้ ให้เดินก่อน ไม่ Jump
+	if (!target_warped && (moved || dist_improving)) {
+		sd->as.last_follow_x = sd->x;
+		sd->as.last_follow_y = sd->y;
+		sd->as.last_follow_dist = dist;
+		sd->as.last_follow_move = now;
+		sd->as.last_follow_stuck_start = 0;
+
+		unit_walktobl(sd, target, sd->as.follow_distance, 1);
+		return true;
+	}
+
+	// ถ้าไม่ได้จับได้ว่าตัวหลักวิง ให้เดินตามก่อน
+	if (!target_warped)
+		unit_walktobl(sd, target, sd->as.follow_distance, 1);
+
+	// ถ้าไม่ขยับ เริ่มจับเวลาว่าติด
+	if (sd->as.last_follow_stuck_start == 0)
+		sd->as.last_follow_stuck_start = now;
+
+	bool stuck = DIFF_TICK(now, sd->as.last_follow_stuck_start) >= battle_config.autosupport_follow_stuck_time;
+
 	sd->as.last_follow_x = sd->x;
 	sd->as.last_follow_y = sd->y;
+	sd->as.last_follow_dist = dist;
 
-	if ((stuck || dist >= AS_FOLLOW_JUMP_TRIGGER_DISTANCE) &&
-		DIFF_TICK(now, sd->as.last_follow_jump) >= AS_FOLLOW_JUMP_COOLDOWN) {
+	bool far_enough = dist >= battle_config.autosupport_follow_jump_min_distance;
+	bool stuck_far_enough = stuck && dist >= battle_config.autosupport_follow_stuck_min_distance;
+	bool jump_cooldown_ok = DIFF_TICK(now, sd->as.last_follow_jump) >= battle_config.autosupport_follow_jump_cooldown;
 
-		int16 x = target->x;
-		int16 y = target->y;
-
-		map_search_freecell(target, 0, &x, &y, 1, 1, 0);
-
-		if (pc_setpos(sd, target->mapindex, x, y, CLR_TELEPORT) == SETPOS_OK) {
-			sd->as.last_follow_jump = now;
+	// สำคัญ:
+	// ถ้าตัวหลักวิง ให้ Jump ได้ทันทีเมื่อระยะห่างเกิน follow_distance
+	// ถ้าไม่ได้วิง ใช้เงื่อนไขเดิม
+	if (!target_warped) {
+		if (!(far_enough || stuck_far_enough))
 			return true;
-		}
+	}
+
+	if (!jump_cooldown_ok)
+		return true;
+
+	// เช็ค SP ก่อน Jump
+	if (battle_config.autosupport_follow_jump_sp_cost > 0) {
+		if (sd->battle_status.sp < battle_config.autosupport_follow_jump_sp_cost)
+			return true;
+	}
+
+	int16 x = target->x;
+	int16 y = target->y;
+
+	if (!map_search_freecell(target, 0, &x, &y, 1, 1, 0))
+		return true;
+
+	if (target_warped && battle_config.autosupport_follow_cancel_cast_on_wing)
+		as_cancel_current_action(sd);
+
+	if (pc_setpos(sd, target->mapindex, x, y, CLR_TELEPORT) == SETPOS_OK) {
+		if (battle_config.autosupport_follow_jump_sp_cost > 0)
+			status_zap(sd, 0, battle_config.autosupport_follow_jump_sp_cost);
+
+		sd->as.last_follow_jump = now;
+		sd->as.last_follow_move = now;
+		sd->as.last_follow_stuck_start = 0;
+
+		sd->as.last_follow_x = sd->x;
+		sd->as.last_follow_y = sd->y;
+		sd->as.last_follow_dist = 0;
+
+		sd->as.last_follow_target_m = target->m;
+		sd->as.last_follow_target_x = target->x;
+		sd->as.last_follow_target_y = target->y;
+
+		return true;
 	}
 
 	return true;
@@ -3305,9 +3411,16 @@ TIMER_FUNC(autosupport_timer)
 		return 0;
 	}
 
+	// Potion ยังควรมาก่อน เพราะเป็นการช่วยตัวเองไม่ให้ตาย
 	if (as_try_potions(sd))
 		return 0;
 
+	// Follow มาก่อน Skill ทั้งหมด
+	// กันตัวซัพร่ายค้างตอนตัวหลัก Wing
+	if (as_try_follow(sd))
+		return 0;
+
+	// หลังตามทันแล้วค่อยทำ Resu / Heal / Buff
 	if (as_try_resurrection(sd))
 		return 0;
 
@@ -3326,8 +3439,6 @@ TIMER_FUNC(autosupport_timer)
 			return 0;
 	}
 
-	as_try_follow(sd);
-
 	return 0;
 }
 
@@ -3345,9 +3456,13 @@ bool autosupport_start(map_session_data* sd, t_tick duration)
 	sd->as.end_tick = duration > 0 ? gettick() + duration : 0;
 	sd->as.last_follow_move = gettick();
 	sd->as.last_follow_jump = 0;
+	sd->as.last_follow_stuck_start = 0;
 	sd->as.last_dead_action = 0;
 	sd->as.last_follow_x = sd->x;
 	sd->as.last_follow_y = sd->y;
+	sd->as.last_follow_target_x = 0;
+	sd->as.last_follow_target_y = 0;
+	sd->as.last_follow_target_m = -1;
 
 	sd->as.timer_tid = add_timer_interval(
 		gettick() + AS_INTERVAL,

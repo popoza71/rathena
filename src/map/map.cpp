@@ -54,6 +54,7 @@
 #include "quest.hpp"
 #include "storage.hpp"
 #include "trade.hpp"
+#include "voice_bridge.hpp"
 
 using namespace rathena;
 using namespace rathena::server_map;
@@ -2230,6 +2231,7 @@ void map_addiddb(block_list *bl)
 		TBL_PC* sd = (TBL_PC*)bl;
 		idb_put(pc_db,sd->id,sd);
 		uidb_put(charid_db,sd->status.char_id,sd);
+		voice_bridge_send_join(sd);
 	}
 	else if( bl->type == BL_MOB )
 	{
@@ -2276,6 +2278,8 @@ void map_deliddb(block_list *bl)
  *------------------------------------------*/
 int32 map_quit(map_session_data *sd) {
 	int32 i;
+
+	voice_bridge_send_leave(sd);
 
 	if (sd->state.keepshop == false) { // Close vending/buyingstore
 		if (sd->state.vending)
@@ -5191,6 +5195,7 @@ void MapServer::finalize(){
 // (^~_~^) Color Nicks End
 
 	map_sql_close();
+	voice_bridge_final();
 
 	ShowStatus("Finished.\n");
 }
@@ -5498,6 +5503,7 @@ bool MapServer::initialize( int32 argc, char *argv[] ){
 // (^~_~^) Color Nicks End
 
 	map_sql_init();
+	voice_bridge_init();
 	if (log_config.sql_logs)
 		log_sql_init();
 

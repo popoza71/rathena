@@ -2205,6 +2205,8 @@ enum e_hat_effects : int16{
 	HAT_EF_RONIN_20K,
 	HAT_EF_RONIN_30K,
 
+	HAT_EF_MIC,
+
 	HAT_EF_MAX
 };
 

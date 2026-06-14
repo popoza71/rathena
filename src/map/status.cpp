@@ -4042,8 +4042,8 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 
 		// Refine Pass
 		if (battle_config.refine_pass_system_enable) {
-			if (i == EQI_SHOES || i == EQI_GARMENT || i == EQI_HEAD_TOP || i == EQI_ARMOR ||
-				//if (i == EQI_SHOES || i == EQI_GARMENT || i == EQI_ARMOR || //เอาหมวกออก
+			//if (i == EQI_SHOES || i == EQI_GARMENT || i == EQI_HEAD_TOP || i == EQI_ARMOR ||
+			if (i == EQI_SHOES || i == EQI_GARMENT || i == EQI_ARMOR || //เอาหมวกออก
 				(i == EQI_HAND_R || (i == EQI_HAND_L && sd->equip_index[EQI_HAND_L] == sd->equip_index[EQI_HAND_R])
 					)) {
 				equip_count += 1;

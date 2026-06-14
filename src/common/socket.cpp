@@ -1261,8 +1261,7 @@ int32 WFIFOSET(int32 fd, size_t len)
 
 // (^~_~^) Gepard Shield Start
 
-	//if (is_gepard_active == true && global_core->get_type() != e_core_type::CHARACTER)
-	if (is_gepard_active == true && global_core->get_type() != e_core_type::CHARACTER && !s->flag.roplay)
+	if (is_gepard_active == true && global_core->get_type() != e_core_type::CHARACTER)
 	{
 		gepard_process_sc_packet(fd, s, len);
 	}

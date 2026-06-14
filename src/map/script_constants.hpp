@@ -10399,6 +10399,7 @@
 	export_constant(HAT_EF_RONIN_20K);
 	export_constant(HAT_EF_RONIN_30K);
 
+	export_constant(HAT_EF_MIC);
 
 	/* pet catch */
 	export_constant(PET_CATCH_UNIVERSAL_NO_BOSS);
