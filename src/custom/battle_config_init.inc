@@ -84,6 +84,7 @@
 	
 	{ "show_shadow_weapon",						&battle_config.show_shadow_weapon,				0, 0, 1, },
 	{ "tick_dead_get_item",						&battle_config.tick_dead_get_item,				0, 0, 1 },
+	{ "magnus_all_race_mode",					&battle_config.magnus_all_race_mode,			0, 0, 2 },
 
 	//autoattack
 	{ "autoattack_skillheal",				&battle_config.autoattack_skillheal,			1,		0,		1,				},

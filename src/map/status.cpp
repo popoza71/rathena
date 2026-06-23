@@ -4196,14 +4196,14 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 
 	// Refine Pass
 	if (battle_config.refine_pass_system_enable && sd) {
-		if (sd->refine_pass_level != minimum_refine_pass || equip_count < 5) {
+		if (sd->refine_pass_level != minimum_refine_pass || equip_count < 4) {
 			if (RefinePassBonusDb.exists(sd->refine_pass_level)) {
 				auto RefineDataOld = RefinePassBonusDb.find(sd->refine_pass_level);
 				clif_status_change(sd, RefineDataOld->icon, 0, 0, 0, 0, 0);
 			}
 		}
 		sd->refine_pass_level = minimum_refine_pass;
-		if (RefinePassBonusDb.exists(sd->refine_pass_level) && equip_count == 5) {
+		if (RefinePassBonusDb.exists(sd->refine_pass_level) && equip_count == 4) {
 			auto RefineDataNew = RefinePassBonusDb.find(sd->refine_pass_level);
 			clif_status_change(sd, RefineDataNew->icon, 1, -1, 0, 0, 0);
 			run_script(RefineDataNew->script, 0, sd->id, 0);

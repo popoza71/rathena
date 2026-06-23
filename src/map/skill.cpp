@@ -7062,10 +7062,42 @@ int32 skill_unit_onplace_timer(skill_unit *unit, block_list *bl, t_tick tick)
 #ifndef RENEWAL
 			//if (!battle_check_undead(tstatus->race,tstatus->def_ele) && tstatus->race!=RC_DEMON)
 			//	break;
-			if(!(BL_CAST(BL_PC, ss))->state.magnus_all_race){
-				if (!battle_check_undead(tstatus->race,tstatus->def_ele) && tstatus->race!=RC_DEMON)
+
+
+		{
+			// Magnus Exorcismus target check
+			// magnus_all_race_mode:
+			// 0 = Original only Undead/Demon
+			// 1 = Global all race
+			// 2 = Item state only
+
+			bool magnus_all_race = false;
+			TBL_PC* ssd = BL_CAST(BL_PC, ss);
+
+			switch (battle_config.magnus_all_race_mode) {
+			case 1:
+				// Global: ทุกคนใช้ Magnus ใส่ได้ทุก Race/Element
+				magnus_all_race = true;
+				break;
+
+			case 2:
+				// Item Only: เฉพาะตัวละครที่มี state.magnus_all_race
+				magnus_all_race = (ssd != nullptr && ssd->state.magnus_all_race);
+				break;
+
+			case 0:
+			default:
+				// Original: Magnus โดนเฉพาะ Undead/Demon
+				magnus_all_race = false;
+				break;
+			}
+
+			if (!magnus_all_race) {
+				if (!battle_check_undead(tstatus->race, tstatus->def_ele) && tstatus->race != RC_DEMON)
 					break;
 			}
+		}
+
 #endif
 			skill_attack(BF_MAGIC,ss,unit,bl,sg->skill_id,sg->skill_lv,tick,0);
 			break;

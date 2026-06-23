@@ -1921,8 +1921,9 @@ static map_session_data* population_engine_spawn_shell(int16_t map_id, int x, in
 	}
 	sd->status.sp         = sd->base_status.max_sp;
 	sd->battle_status.sp  = sd->base_status.max_sp;
-	if (sd->status.zeny < 100000)
-		sd->status.zeny = 100000;
+	//if (sd->status.zeny < 100000)
+	//	sd->status.zeny = 100000;
+	sd->status.zeny = 0;
     
 	// Grant full job skill tree (YAML Skills: true, default) or minimal basics (Skills: false).
 	if (pop_cfg == nullptr || pop_cfg->grant_skill_tree) {

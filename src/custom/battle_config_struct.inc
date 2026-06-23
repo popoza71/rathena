@@ -85,6 +85,7 @@
 
 	int32 show_shadow_weapon;
 	int32 tick_dead_get_item;
+	int32 magnus_all_race_mode;
 	
 	// auto attack
 	int32 autoattack_skillheal;
