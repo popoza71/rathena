@@ -67,6 +67,7 @@
 	int32 berserk_provork_lv;
 	int32 endure_hit;
 	int32 gank_percent;
+	int32 maximize_power_sp_regen;
 
  	//Max Trap [Hyroshima]
 	int32 skill_max_trap;

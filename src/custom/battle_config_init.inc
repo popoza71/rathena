@@ -66,6 +66,7 @@
 	{ "berserk_provork_lv",						&battle_config.berserk_provork_lv,				10,     0,      INT_MAX, },	//puppy
 	{ "endure_hit",								&battle_config.endure_hit,						7,      0,      INT_MAX, },
 	{ "gank_percent",							&battle_config.gank_percent,					0,		0,		100 },	//puppy
+	{ "maximize_power_sp_regen",				&battle_config.maximize_power_sp_regen,			0,		0,		1 },
 
  	//Max Trap [Hyroshima]
 	{ "skill_max_trap",							&battle_config.skill_max_trap,                  1,      0,      INT_MAX,        },
