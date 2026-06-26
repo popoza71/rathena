@@ -204,7 +204,8 @@ void log_branch( map_session_data* sd )
 }
 
 /// logs item transactions (generic)
-void log_pick( int32 id, int16 m, e_log_pick_type type, int32 amount, const item* itm )
+//void log_pick( int32 id, int16 m, e_log_pick_type type, int32 amount, const item* itm )
+void log_pick(int32 id, int16 m, e_log_pick_type type, int32 amount, const item* itm, const npc_data* nd = nullptr) //puppy log_pick
 {
 	nullpo_retv(itm);
 	if( ( log_config.enable_logs&type ) == 0 )
@@ -222,7 +223,23 @@ void log_pick( int32 id, int16 m, e_log_pick_type type, int32 amount, const item
 		StringBuf buf;
 		StringBuf_Init(&buf);
 
-		StringBuf_Printf(&buf, "%s INTO `%s` (`time`, `char_id`, `type`, `nameid`, `amount`, `refine`, `map`, `unique_id`, `bound`, `enchantgrade`", LOG_QUERY, log_config.log_pick);
+	//puppy log_pick
+	char npc_name[64] = "";
+	char esc_npc_name[129] = "";
+	uint16 npc_x = 0;
+	uint16 npc_y = 0;
+
+	if (type == LOG_TYPE_SCRIPT && nd != nullptr) {
+		safestrncpy(npc_name, nd->exname, sizeof(npc_name));
+		Sql_EscapeStringLen(logmysql_handle, esc_npc_name, npc_name, strlen(npc_name));
+
+		npc_x = nd->x; // พิกัด NPC จาก script
+		npc_y = nd->y; // พิกัด NPC จาก script
+	}
+	//puppy log_pick
+
+		//StringBuf_Printf(&buf, "%s INTO `%s` (`time`, `char_id`, `type`, `nameid`, `amount`, `refine`, `map`, `unique_id`, `bound`, `enchantgrade`", LOG_QUERY, log_config.log_pick);
+		StringBuf_Printf(&buf, "%s INTO `%s` (`time`, `char_id`, `type`, `nameid`, `amount`, `refine`, `map`, `npc_name`, `npc_x`, `npc_y`, `unique_id`, `bound`, `enchantgrade`", LOG_QUERY, log_config.log_pick); //puppy log_pick
 		for (i = 0; i < MAX_SLOTS; ++i)
 			StringBuf_Printf(&buf, ", `card%d`", i);
 		for (i = 0; i < MAX_ITEM_RDM_OPT; ++i) {
@@ -230,8 +247,24 @@ void log_pick( int32 id, int16 m, e_log_pick_type type, int32 amount, const item
 			StringBuf_Printf(&buf, ", `option_val%d`", i);
 			StringBuf_Printf(&buf, ", `option_parm%d`", i);
 		}
-		StringBuf_Printf(&buf, ") VALUES(NOW(),'%u','%c','%u','%d','%d','%s','%" PRIu64 "','%d','%d'",
-			id, log_picktype2char(type), itm->nameid, amount, itm->refine, map_getmapdata(m)->name[0] ? map_getmapdata(m)->name : "", itm->unique_id, itm->bound, itm->enchantgrade);
+		//StringBuf_Printf(&buf, ") VALUES(NOW(),'%u','%c','%u','%d','%d','%s','%" PRIu64 "','%d','%d'",
+		//	id, log_picktype2char(type), itm->nameid, amount, itm->refine, map_getmapdata(m)->name[0] ? map_getmapdata(m)->name : "", itm->unique_id, itm->bound, itm->enchantgrade);
+
+		//puppy log_pick
+		StringBuf_Printf(&buf, ") VALUES(NOW(),'%u','%c','%u','%d','%d','%s','%s','%hu','%hu','%" PRIu64 "','%d','%d'",
+			id,
+			log_picktype2char(type),
+			itm->nameid,
+			amount,
+			itm->refine,
+			map_getmapdata(m)->name[0] ? map_getmapdata(m)->name : "",
+			esc_npc_name,
+			npc_x,
+			npc_y,
+			itm->unique_id,
+			itm->bound,
+			itm->enchantgrade);
+		//puppy log_pick
 
 		for (i = 0; i < MAX_SLOTS; i++)
 			StringBuf_Printf(&buf, ",'%u'", itm->card[i]);
@@ -258,12 +291,27 @@ void log_pick( int32 id, int16 m, e_log_pick_type type, int32 amount, const item
 }
 
 /// logs item transactions (players)
-void log_pick_pc( const map_session_data* sd, e_log_pick_type type, int32 amount, const item* itm )
+//void log_pick_pc( const map_session_data* sd, e_log_pick_type type, int32 amount, const item* itm )
+//{
+//	nullpo_retv(sd);
+//	log_pick(sd->status.char_id, sd->m, type, amount, itm);
+//}
+
+//puppy log_pick
+void log_pick_pc(const map_session_data* sd, e_log_pick_type type, int32 amount, const item* itm)
 {
 	nullpo_retv(sd);
-	log_pick(sd->status.char_id, sd->m, type, amount, itm);
-}
 
+	const npc_data* nd = nullptr;
+
+	// เฉพาะ type N / LOG_TYPE_SCRIPT เท่านั้น
+	if (type == LOG_TYPE_SCRIPT && sd->npc_id != 0) {
+		nd = map_id2nd(sd->npc_id);
+	}
+
+	log_pick(sd->status.char_id, sd->m, type, amount, itm, nd);
+}
+//puppy log_pick
 
 /// logs item transactions (monsters)
 void log_pick_mob( const mob_data* md, e_log_pick_type type, int32 amount, const item* itm )

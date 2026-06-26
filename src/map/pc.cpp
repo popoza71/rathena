@@ -6896,17 +6896,59 @@ void pc_bonus2(map_session_data *sd,int32 type,int32 type2,int32 val)
 		}
 		break;
 
+	//default:
+	//	if (current_equip_combo_pos > 0) {
+	//		ShowWarning("pc_bonus2: unknown bonus type %d %d %d in a combo with item #%u\n", type, type2, val, sd->inventory_data[pc_checkequip( sd, current_equip_combo_pos )]->nameid);
+	//	} 
+	//	else if (current_equip_card_id > 0 || current_equip_item_index > 0) {
+	//		ShowWarning("pc_bonus2: unknown bonus type %d %d %d in item #%u\n", type, type2, val, current_equip_card_id ? current_equip_card_id : sd->inventory_data[current_equip_item_index]->nameid);
+	//	}
+	//	else {
+	//		ShowWarning("pc_bonus2: unknown bonus type %d %d %d in unknown usage. Report this!\n", type, type2, val);
+	//	}
+	//	break;
 	default:
+	{
+		uint32 item_id = current_equip_card_id;
+
 		if (current_equip_combo_pos > 0) {
-			ShowWarning("pc_bonus2: unknown bonus type %d %d %d in a combo with item #%u\n", type, type2, val, sd->inventory_data[pc_checkequip( sd, current_equip_combo_pos )]->nameid);
-		} 
-		else if (current_equip_card_id > 0 || current_equip_item_index > 0) {
-			ShowWarning("pc_bonus2: unknown bonus type %d %d %d in item #%u\n", type, type2, val, current_equip_card_id ? current_equip_card_id : sd->inventory_data[current_equip_item_index]->nameid);
+			int16 idx = pc_checkequip(sd, current_equip_combo_pos);
+
+			if (idx >= 0 && idx < MAX_INVENTORY && sd->inventory_data[idx] != nullptr) {
+				ShowWarning("pc_bonus2: unknown bonus type %d %d %d in a combo with item #%u\n",
+					type, type2, val, sd->inventory_data[idx]->nameid);
+			}
+			else if (idx >= 0 && idx < MAX_INVENTORY && sd->inventory.u.items_inventory[idx].nameid > 0) {
+				ShowWarning("pc_bonus2: unknown bonus type %d %d %d in a combo with item #%u\n",
+					type, type2, val, sd->inventory.u.items_inventory[idx].nameid);
+			}
+			else {
+				ShowWarning("pc_bonus2: unknown bonus type %d %d %d in unknown combo usage. Report this!\n",
+					type, type2, val);
+			}
 		}
 		else {
-			ShowWarning("pc_bonus2: unknown bonus type %d %d %d in unknown usage. Report this!\n", type, type2, val);
+			if (item_id == 0 && current_equip_item_index >= 0 && current_equip_item_index < MAX_INVENTORY) {
+				if (sd->inventory_data[current_equip_item_index] != nullptr) {
+					item_id = sd->inventory_data[current_equip_item_index]->nameid;
+				}
+				else if (sd->inventory.u.items_inventory[current_equip_item_index].nameid > 0) {
+					item_id = sd->inventory.u.items_inventory[current_equip_item_index].nameid;
+				}
+			}
+
+			if (item_id > 0) {
+				ShowWarning("pc_bonus2: unknown bonus type %d %d %d in item #%u\n",
+					type, type2, val, item_id);
+			}
+			else {
+				ShowWarning("pc_bonus2: unknown bonus type %d %d %d in unknown usage. Report this!\n",
+					type, type2, val);
+			}
 		}
 		break;
+	}
+
 	}
 }
 
